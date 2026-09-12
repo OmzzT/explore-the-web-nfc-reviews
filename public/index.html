@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f1e8">
+  <title>Customer Feedback</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">Customer Experience</div>
+    <main class="card">
+      <section id="loading">
+        <div class="loader"></div>
+        <h1>Loading</h1>
+        <p class="lead">Just a moment…</p>
+      </section>
+      <section id="rating" class="hidden">
+        <h1>How was your experience?</h1>
+        <div id="businessName" class="business"></div>
+        <p class="lead">Your feedback helps the business improve.</p>
+        <div class="stars" aria-label="Choose a rating">
+          <button type="button" data-rating="5" aria-label="5 stars">★</button>
+          <button type="button" data-rating="4" aria-label="4 stars">★</button>
+          <button type="button" data-rating="3" aria-label="3 stars">★</button>
+          <button type="button" data-rating="2" aria-label="2 stars">★</button>
+          <button type="button" data-rating="1" aria-label="1 star">★</button>
+        </div>
+        <div class="hint">Tap a star to continue</div>
+      </section>
+      <section id="feedback" class="hidden">
+        <h1>Tell us what we can improve</h1>
+        <div id="ratingPill" class="pill"></div>
+        <p class="lead">Your comment will be sent privately to the business.</p>
+        <label for="comment">What could we have done better?</label>
+        <textarea id="comment" maxlength="1500" placeholder="Write a quick comment…"></textarea>
+        <button id="sendBtn" class="btn" type="button">Send private feedback</button>
+        <div id="feedbackError" class="error hidden"></div>
+        <p class="privacy">No email address is requested from you.</p>
+      </section>
+      <section id="thanks" class="hidden">
+        <div class="success">✓</div>
+        <h1>Thank you</h1>
+        <p class="lead">Your private feedback has been sent successfully.</p>
+        <div class="tiny">You can now close this page.</div>
+      </section>
+      <section id="badLink" class="hidden">
+        <h1>Link unavailable</h1>
+        <p class="lead">This review card is not active or the link is incorrect.</p>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
