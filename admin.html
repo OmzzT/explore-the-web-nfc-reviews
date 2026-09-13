@@ -4,20 +4,85 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Explore the Web | Admin</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 60px auto;
+      padding: 20px;
+    }
+
+    input, button {
+      display: block;
+      width: 100%;
+      max-width: 400px;
+      padding: 12px;
+      margin: 10px 0;
+      box-sizing: border-box;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    #dashboard {
+      display: none;
+    }
+
+    #login-error {
+      color: red;
+    }
+  </style>
 </head>
 
 <body>
-  <h1>Explore the Web</h1>
-  <h2>NFC Review Admin Dashboard</h2>
 
-  <p>Welcome, Omar.</p>
+  <div id="login-section">
+    <h1>Explore the Web</h1>
+    <h2>Admin Login</h2>
 
-  <hr>
+    <input
+      id="email"
+      type="email"
+      placeholder="Email address"
+      autocomplete="email"
+    >
 
-  <h3>Businesses</h3>
+    <input
+      id="password"
+      type="password"
+      placeholder="Password"
+      autocomplete="current-password"
+    >
 
-  <div id="businesses">
-    <p>Loading businesses...</p>
+    <button id="login-button">Log in</button>
+
+    <p id="login-error"></p>
   </div>
+
+
+  <div id="dashboard">
+    <h1>Explore the Web</h1>
+    <h2>NFC Review Admin Dashboard</h2>
+
+    <button id="logout-button">Log out</button>
+
+    <hr>
+
+    <h3>Businesses</h3>
+
+    <div id="businesses">
+      <p>Loading businesses...</p>
+    </div>
+  </div>
+
+
+  <script src="config.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="admin.js"></script>
+
 </body>
 </html>
