@@ -21,6 +21,25 @@ async function rpc(name, payload) {
   return type.includes("application/json") ? response.json() : null;
 }
 
+async function sendFeedbackEmail(comment) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/send-feedback-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_PUBLISHABLE_KEY,
+      "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+    },
+    body: JSON.stringify({
+      card_code: cardCode,
+      rating: selectedRating,
+      comment
+    })
+  });
+
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+}
+
 async function start() {
   cardCode = (new URLSearchParams(location.search).get("card") || "").trim().toUpperCase();
   if (!cardCode || !SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) return show("badLink");
@@ -63,6 +82,13 @@ async function submitFeedback() {
   button.textContent = "Sending…";
   try {
     await rpc("submit_private_feedback", { p_card_code: cardCode, p_rating: selectedRating, p_comment: comment });
+
+    try {
+      await sendFeedbackEmail(comment);
+    } catch (emailError) {
+      console.error("Feedback was saved, but the email notification failed:", emailError);
+    }
+
     show("thanks");
   } catch (error) {
     console.error(error);
