@@ -9,3 +9,4 @@ NFC review and private feedback system for Explore the Web.
 - **Supabase** — businesses, NFC cards, feedback and scan events
 
 The customer-facing site uses one shared application. Each NFC card supplies its own card code, which is resolved against Supabase to load the correct business.
+Admin dashboard added for managing NFC review businesses.
