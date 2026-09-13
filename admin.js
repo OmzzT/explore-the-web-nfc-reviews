@@ -25,12 +25,73 @@ function showLogin() {
   dashboard.style.display = "none";
 }
 
-function showDashboard() {
+async function loadBusinesses() {
+  businessesContainer.innerHTML = "<p>Loading businesses...</p>";
+
+  const { data, error } = await supabaseClient.rpc(
+    "get_admin_businesses"
+  );
+
+  if (error) {
+    businessesContainer.innerHTML =
+      "<p>Could not load businesses.</p>";
+
+    console.error(error);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    businessesContainer.innerHTML =
+      "<p>No businesses found.</p>";
+    return;
+  }
+
+  businessesContainer.innerHTML = data
+    .map(
+      (business) => `
+        <div style="
+          border:1px solid #ddd;
+          padding:16px;
+          margin:12px 0;
+          border-radius:8px;
+        ">
+          <h3>${business.business_name}</h3>
+
+          <p>
+            <strong>Business code:</strong>
+            ${business.business_code}
+          </p>
+
+          <p>
+            <strong>Owner email:</strong>
+            ${business.owner_email}
+          </p>
+
+          <p>
+            <strong>Status:</strong>
+            ${business.is_active ? "Active" : "Inactive"}
+          </p>
+
+          <p>
+            <a
+              href="${business.google_review_url}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open Google review link
+            </a>
+          </p>
+        </div>
+      `
+    )
+    .join("");
+}
+
+async function showDashboard() {
   loginSection.style.display = "none";
   dashboard.style.display = "block";
 
-  businessesContainer.innerHTML =
-    "<p>Logged in successfully. Business data will be connected next.</p>";
+  await loadBusinesses();
 }
 
 async function checkLogin() {
@@ -39,7 +100,7 @@ async function checkLogin() {
   } = await supabaseClient.auth.getSession();
 
   if (session) {
-    showDashboard();
+    await showDashboard();
   } else {
     showLogin();
   }
@@ -52,28 +113,31 @@ loginButton.addEventListener("click", async () => {
   loginError.textContent = "";
 
   if (!email || !password) {
-    loginError.textContent = "Please enter your email and password.";
+    loginError.textContent =
+      "Please enter your email and password.";
     return;
   }
 
   loginButton.disabled = true;
   loginButton.textContent = "Logging in...";
 
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
+  const { error } =
+    await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
 
   loginButton.disabled = false;
   loginButton.textContent = "Log in";
 
   if (error) {
-    loginError.textContent = "Incorrect email or password.";
+    loginError.textContent =
+      "Incorrect email or password.";
     return;
   }
 
   passwordInput.value = "";
-  showDashboard();
+  await showDashboard();
 });
 
 logoutButton.addEventListener("click", async () => {
@@ -81,12 +145,14 @@ logoutButton.addEventListener("click", async () => {
   showLogin();
 });
 
-supabaseClient.auth.onAuthStateChange((_event, session) => {
-  if (session) {
-    showDashboard();
-  } else {
-    showLogin();
+supabaseClient.auth.onAuthStateChange(
+  async (_event, session) => {
+    if (session) {
+      await showDashboard();
+    } else {
+      showLogin();
+    }
   }
-});
+);
 
 checkLogin();
