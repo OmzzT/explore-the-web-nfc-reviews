@@ -2,7 +2,7 @@ const supabaseUrl = window.APP_CONFIG?.SUPABASE_URL;
 const supabaseKey = window.APP_CONFIG?.SUPABASE_PUBLISHABLE_KEY;
 
 /* =========================
-   PAGE ELEMENTS
+   ELEMENTS
 ========================= */
 
 const loginSection = document.getElementById("login-section");
@@ -23,32 +23,25 @@ const businessSort = document.getElementById("business-sort");
 
 const statBusinesses = document.getElementById("stat-businesses");
 const statActiveCards = document.getElementById("stat-active-cards");
+const statTaps = document.getElementById("stat-taps");
+const statGoogleClicks = document.getElementById("stat-google-clicks");
 const statFeedback = document.getElementById("stat-feedback");
-
-/* =========================
-   NEW CUSTOMER ELEMENTS
-========================= */
 
 const wizardBusinessName = document.getElementById(
   "wizard-business-name"
 );
-
 const wizardOwnerEmail = document.getElementById(
   "wizard-owner-email"
 );
-
 const wizardGoogleUrl = document.getElementById(
   "wizard-google-url"
 );
-
 const wizardBusinessCode = document.getElementById(
   "wizard-business-code"
 );
-
 const wizardCardCount = document.getElementById(
   "wizard-card-count"
 );
-
 const wizardCreateButton = document.getElementById(
   "wizard-create-button"
 );
@@ -65,24 +58,27 @@ let nfcSearchTerm = "";
 let feedbackSearchTerm = "";
 let feedbackRatingFilter = "all";
 
+let analyticsData = {
+  nfc_taps: 0,
+  google_redirects: 0,
+  private_feedback: 0
+};
+
 /* =========================
-   CONFIGURATION
+   CONFIG
 ========================= */
 
 if (!supabaseUrl || !supabaseKey) {
   loginError.textContent =
     "Website configuration could not be loaded.";
 
-  throw new Error(
-    "Missing Supabase configuration."
-  );
+  throw new Error("Missing Supabase configuration.");
 }
 
-const supabaseClient =
-  window.supabase.createClient(
-    supabaseUrl,
-    supabaseKey
-  );
+const supabaseClient = window.supabase.createClient(
+  supabaseUrl,
+  supabaseKey
+);
 
 /* =========================
    HELPERS
@@ -108,16 +104,21 @@ function formatDate(value) {
     return "Unknown";
   }
 
-  return date.toLocaleString(
-    "en-GB",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    }
-  );
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function percentage(value, total) {
+  if (!total) {
+    return "0%";
+  }
+
+  return `${Math.round((value / total) * 100)}%`;
 }
 
 function showLogin() {
@@ -157,82 +158,68 @@ function renderBusinesses() {
   }
 
   const searchTerm =
-    businessSearch
-      ?.value
-      .trim()
-      .toLowerCase() || "";
+    businessSearch?.value.trim().toLowerCase() || "";
 
   const status =
-    businessStatusFilter?.value ||
-    "all";
+    businessStatusFilter?.value || "all";
 
   const sort =
-    businessSort?.value ||
-    "newest";
+    businessSort?.value || "newest";
 
-  let filteredBusinesses =
-    businessesData.filter(
-      (business) => {
-        const searchableText = [
-          business.business_name,
-          business.business_code,
-          business.owner_email
-        ]
-          .join(" ")
-          .toLowerCase();
+  let filteredBusinesses = businessesData.filter(
+    (business) => {
+      const searchableText = [
+        business.business_name,
+        business.business_code,
+        business.owner_email
+      ]
+        .join(" ")
+        .toLowerCase();
 
-        const matchesSearch =
-          searchableText.includes(
-            searchTerm
-          );
+      const matchesSearch =
+        searchableText.includes(searchTerm);
 
-        let matchesStatus = true;
+      let matchesStatus = true;
 
-        if (status === "active") {
-          matchesStatus =
-            business.is_active === true;
-        }
+      if (status === "active") {
+        matchesStatus =
+          business.is_active === true;
+      }
 
-        if (status === "inactive") {
-          matchesStatus =
-            business.is_active === false;
-        }
+      if (status === "inactive") {
+        matchesStatus =
+          business.is_active === false;
+      }
 
+      return matchesSearch && matchesStatus;
+    }
+  );
+
+  filteredBusinesses = [...filteredBusinesses].sort(
+    (a, b) => {
+      if (sort === "oldest") {
         return (
-          matchesSearch &&
-          matchesStatus
+          new Date(a.created_at) -
+          new Date(b.created_at)
         );
       }
-    );
 
-  filteredBusinesses =
-    [...filteredBusinesses].sort(
-      (a, b) => {
-        if (sort === "oldest") {
-          return (
-            new Date(a.created_at) -
-            new Date(b.created_at)
-          );
-        }
-
-        if (sort === "name") {
-          return String(
-            a.business_name
-          ).localeCompare(
-            String(b.business_name)
-          );
-        }
-
-        return (
-          new Date(b.created_at) -
-          new Date(a.created_at)
+      if (sort === "name") {
+        return String(
+          a.business_name
+        ).localeCompare(
+          String(b.business_name)
         );
       }
-    );
 
-  if (
-    filteredBusinesses.length === 0
-  ) {
+      return (
+        new Date(b.created_at) -
+        new Date(a.created_at)
+      );
+    }
+  );
+
+  if (filteredBusinesses.length === 0) {
     businessesContainer.innerHTML = `
       <p style="color:#6b7280;">
         No businesses match your search.
@@ -244,74 +231,58 @@ function renderBusinesses() {
 
   businessesContainer.innerHTML =
     filteredBusinesses
-      .map(
-        (business) => {
-          const businessName =
-            escapeHtml(
-              business.business_name
-            );
+      .map((business) => {
+        const businessName =
+          escapeHtml(business.business_name);
 
-          const businessCode =
-            escapeHtml(
-              business.business_code
-            );
+        const businessCode =
+          escapeHtml(business.business_code);
 
-          const ownerEmail =
-            escapeHtml(
-              business.owner_email
-            );
+        const ownerEmail =
+          escapeHtml(business.owner_email);
 
-          const reviewUrl =
-            escapeHtml(
-              business.google_review_url
-            );
+        const reviewUrl =
+          escapeHtml(business.google_review_url);
 
-          return `
-            <div>
+        return `
+          <div>
 
-              <h3>
-                ${businessName}
-              </h3>
+            <h3>
+              ${businessName}
+            </h3>
 
-              <p>
-                <strong>
-                  Business code:
-                </strong>
-                ${businessCode}
-              </p>
+            <p>
+              <strong>Business code:</strong>
+              ${businessCode}
+            </p>
 
-              <p>
-                <strong>
-                  Owner email:
-                </strong>
-                ${ownerEmail}
-              </p>
+            <p>
+              <strong>Owner email:</strong>
+              ${ownerEmail}
+            </p>
 
-              <p>
-                <strong>
-                  Status:
-                </strong>
-                ${
-                  business.is_active
-                    ? "Active"
-                    : "Inactive"
-                }
-              </p>
+            <p>
+              <strong>Status:</strong>
+              ${
+                business.is_active
+                  ? "Active"
+                  : "Inactive"
+              }
+            </p>
 
-              <p>
-                <a
-                  href="${reviewUrl}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Open Google review link
-                </a>
-              </p>
+            <p>
+              <a
+                href="${reviewUrl}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open Google review link
+              </a>
+            </p>
 
-            </div>
-          `;
-        }
-      )
+          </div>
+        `;
+      })
       .join("");
 }
 
@@ -330,9 +301,7 @@ async function loadBusinesses() {
 
   if (error) {
     businessesContainer.innerHTML = `
-      <p>
-        Could not load businesses.
-      </p>
+      <p>Could not load businesses.</p>
     `;
 
     console.error(
@@ -343,8 +312,7 @@ async function loadBusinesses() {
     return;
   }
 
-  businessesData =
-    data || [];
+  businessesData = data || [];
 
   if (statBusinesses) {
     statBusinesses.textContent =
@@ -355,236 +323,203 @@ async function loadBusinesses() {
 }
 
 /* =========================
-   NFC CARD MANAGER
+   NFC CARDS
 ========================= */
 
 function getNfcPanel() {
-  const nfcPage =
-    document.getElementById(
-      "nfc-page"
-    );
+  const page =
+    document.getElementById("nfc-page");
 
-  if (!nfcPage) {
-    return null;
-  }
-
-  return nfcPage.querySelector(
-    ".panel"
-  );
+  return page?.querySelector(".panel") || null;
 }
 
 function renderNfcCards() {
-  const panel =
-    getNfcPanel();
+  const panel = getNfcPanel();
 
   if (!panel) {
     return;
   }
 
-  const filteredCards =
-    nfcCardsData.filter(
-      (card) => {
-        const searchableText = [
-          card.card_code,
-          card.business_name,
-          card.label
-        ]
-          .join(" ")
-          .toLowerCase();
+  const filteredCards = nfcCardsData.filter(
+    (card) => {
+      const searchableText = [
+        card.card_code,
+        card.business_name,
+        card.label
+      ]
+        .join(" ")
+        .toLowerCase();
 
-        return searchableText.includes(
-          nfcSearchTerm
+      return searchableText.includes(
+        nfcSearchTerm
+      );
+    }
+  );
+
+  const rows = filteredCards
+    .map((card) => {
+      const cardCode =
+        escapeHtml(card.card_code);
+
+      const businessName =
+        escapeHtml(card.business_name);
+
+      const label =
+        escapeHtml(card.label || "NFC Card");
+
+      const createdAt =
+        escapeHtml(
+          formatDate(card.created_at)
         );
-      }
-    );
 
-  const cardRows =
-    filteredCards
-      .map(
-        (card) => {
-          const cardCode =
-            escapeHtml(
-              card.card_code
-            );
+      const cardUrl =
+        `${window.location.origin}/?card=${encodeURIComponent(
+          card.card_code
+        )}`;
 
-          const businessName =
-            escapeHtml(
-              card.business_name
-            );
+      return `
+        <div style="
+          border:1px solid #e5e7eb;
+          border-radius:14px;
+          padding:18px;
+          background:#fff;
+          display:grid;
+          grid-template-columns:
+            minmax(160px,1fr)
+            minmax(180px,1.4fr)
+            minmax(100px,.7fr)
+            auto;
+          gap:18px;
+          align-items:center;
+        ">
 
-          const label =
-            escapeHtml(
-              card.label ||
-              "NFC Card"
-            );
-
-          const createdAt =
-            escapeHtml(
-              formatDate(
-                card.created_at
-              )
-            );
-
-          const cardUrl =
-            `${window.location.origin}/?card=${encodeURIComponent(
-              card.card_code
-            )}`;
-
-          return `
+          <div>
             <div style="
-              border:1px solid #e5e7eb;
-              border-radius:14px;
-              padding:18px;
-              background:#fff;
-              display:grid;
-              grid-template-columns:
-                minmax(160px,1fr)
-                minmax(180px,1.4fr)
-                minmax(100px,.7fr)
-                auto;
-              gap:18px;
-              align-items:center;
+              font-size:12px;
+              color:#6b7280;
+              margin-bottom:5px;
             ">
-
-              <div>
-
-                <div style="
-                  font-size:12px;
-                  color:#6b7280;
-                  margin-bottom:5px;
-                ">
-                  CARD CODE
-                </div>
-
-                <strong style="
-                  font-size:17px;
-                ">
-                  ${cardCode}
-                </strong>
-
-                <div style="
-                  color:#6b7280;
-                  font-size:13px;
-                  margin-top:5px;
-                ">
-                  ${label}
-                </div>
-
-              </div>
-
-              <div>
-
-                <div style="
-                  font-size:12px;
-                  color:#6b7280;
-                  margin-bottom:5px;
-                ">
-                  BUSINESS
-                </div>
-
-                <strong>
-                  ${businessName}
-                </strong>
-
-                <div style="
-                  color:#6b7280;
-                  font-size:13px;
-                  margin-top:5px;
-                ">
-                  Created ${createdAt}
-                </div>
-
-              </div>
-
-              <div>
-
-                <div style="
-                  font-size:12px;
-                  color:#6b7280;
-                  margin-bottom:5px;
-                ">
-                  STATUS
-                </div>
-
-                <span style="
-                  display:inline-block;
-                  padding:6px 10px;
-                  border-radius:999px;
-                  background:${
-                    card.is_active
-                      ? "#dcfce7"
-                      : "#f3f4f6"
-                  };
-                  color:${
-                    card.is_active
-                      ? "#166534"
-                      : "#6b7280"
-                  };
-                  font-size:12px;
-                  font-weight:700;
-                ">
-                  ${
-                    card.is_active
-                      ? "ACTIVE"
-                      : "INACTIVE"
-                  }
-                </span>
-
-              </div>
-
-              <div style="
-                display:flex;
-                gap:8px;
-                flex-wrap:wrap;
-                justify-content:flex-end;
-              ">
-
-                <a
-                  href="${cardUrl}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style="
-                    display:inline-block;
-                    padding:9px 12px;
-                    border-radius:9px;
-                    background:#111827;
-                    color:white;
-                    text-decoration:none;
-                    font-size:13px;
-                    font-weight:700;
-                  "
-                >
-                  Open Card
-                </a>
-
-                <button
-                  type="button"
-                  class="copy-card-link"
-                  data-url="${escapeHtml(
-                    cardUrl
-                  )}"
-                  style="
-                    border:1px solid #d1d5db;
-                    background:white;
-                    padding:9px 12px;
-                    border-radius:9px;
-                    font-size:13px;
-                    font-weight:700;
-                  "
-                >
-                  Copy URL
-                </button>
-
-              </div>
-
+              CARD CODE
             </div>
-          `;
-        }
-      )
-      .join("");
+
+            <strong style="font-size:17px;">
+              ${cardCode}
+            </strong>
+
+            <div style="
+              color:#6b7280;
+              font-size:13px;
+              margin-top:5px;
+            ">
+              ${label}
+            </div>
+          </div>
+
+          <div>
+            <div style="
+              font-size:12px;
+              color:#6b7280;
+              margin-bottom:5px;
+            ">
+              BUSINESS
+            </div>
+
+            <strong>
+              ${businessName}
+            </strong>
+
+            <div style="
+              color:#6b7280;
+              font-size:13px;
+              margin-top:5px;
+            ">
+              Created ${createdAt}
+            </div>
+          </div>
+
+          <div>
+            <div style="
+              font-size:12px;
+              color:#6b7280;
+              margin-bottom:5px;
+            ">
+              STATUS
+            </div>
+
+            <span style="
+              display:inline-block;
+              padding:6px 10px;
+              border-radius:999px;
+              background:${
+                card.is_active
+                  ? "#dcfce7"
+                  : "#f3f4f6"
+              };
+              color:${
+                card.is_active
+                  ? "#166534"
+                  : "#6b7280"
+              };
+              font-size:12px;
+              font-weight:700;
+            ">
+              ${
+                card.is_active
+                  ? "ACTIVE"
+                  : "INACTIVE"
+              }
+            </span>
+          </div>
+
+          <div style="
+            display:flex;
+            gap:8px;
+            flex-wrap:wrap;
+            justify-content:flex-end;
+          ">
+
+            <a
+              href="${cardUrl}"
+              target="_blank"
+              rel="noopener noreferrer"
+              style="
+                display:inline-block;
+                padding:9px 12px;
+                border-radius:9px;
+                background:#111827;
+                color:white;
+                text-decoration:none;
+                font-size:13px;
+                font-weight:700;
+              "
+            >
+              Open Card
+            </a>
+
+            <button
+              type="button"
+              class="copy-card-link"
+              data-url="${escapeHtml(cardUrl)}"
+              style="
+                border:1px solid #d1d5db;
+                background:white;
+                padding:9px 12px;
+                border-radius:9px;
+                font-size:13px;
+                font-weight:700;
+              "
+            >
+              Copy URL
+            </button>
+
+          </div>
+
+        </div>
+      `;
+    })
+    .join("");
 
   panel.innerHTML = `
-
     <div style="
       display:flex;
       align-items:center;
@@ -595,7 +530,6 @@ function renderNfcCards() {
     ">
 
       <div>
-
         <h2 style="
           margin:0 0 5px;
           font-size:20px;
@@ -616,15 +550,12 @@ function renderNfcCards() {
           }
           in your network
         </p>
-
       </div>
 
       <input
         id="nfc-card-search"
         type="search"
-        value="${escapeHtml(
-          nfcSearchTerm
-        )}"
+        value="${escapeHtml(nfcSearchTerm)}"
         placeholder="Search card or business..."
         style="
           min-width:280px;
@@ -637,17 +568,13 @@ function renderNfcCards() {
 
     </div>
 
-    <div
-      id="nfc-card-list"
-      style="
-        display:grid;
-        gap:12px;
-      "
-    >
-
+    <div style="
+      display:grid;
+      gap:12px;
+    ">
       ${
         filteredCards.length
-          ? cardRows
+          ? rows
           : `
             <div style="
               padding:40px 20px;
@@ -660,7 +587,6 @@ function renderNfcCards() {
             </div>
           `
       }
-
     </div>
   `;
 
@@ -698,59 +624,48 @@ function renderNfcCards() {
   }
 
   document
-    .querySelectorAll(
-      ".copy-card-link"
-    )
-    .forEach(
-      (button) => {
-        button.addEventListener(
-          "click",
-          async () => {
-            const url =
-              button.dataset.url;
+    .querySelectorAll(".copy-card-link")
+    .forEach((button) => {
+      button.addEventListener(
+        "click",
+        async () => {
+          const url = button.dataset.url;
 
-            try {
-              await navigator.clipboard
-                .writeText(url);
+          try {
+            await navigator.clipboard.writeText(
+              url
+            );
 
-              const oldText =
-                button.textContent;
+            const oldText =
+              button.textContent;
 
+            button.textContent =
+              "Copied ✓";
+
+            setTimeout(() => {
               button.textContent =
-                "Copied ✓";
-
-              setTimeout(
-                () => {
-                  button.textContent =
-                    oldText;
-                },
-                1500
-              );
-            } catch {
-              window.prompt(
-                "Copy this NFC URL:",
-                url
-              );
-            }
+                oldText;
+            }, 1500);
+          } catch {
+            window.prompt(
+              "Copy this NFC URL:",
+              url
+            );
           }
-        );
-      }
-    );
+        }
+      );
+    });
 }
 
 async function loadNfcCards() {
-  const panel =
-    getNfcPanel();
+  const panel = getNfcPanel();
 
   if (!panel) {
     return;
   }
 
-  panel.innerHTML = `
-    <p>
-      Loading NFC cards...
-    </p>
-  `;
+  panel.innerHTML =
+    "<p>Loading NFC cards...</p>";
 
   const { data, error } =
     await supabaseClient.rpc(
@@ -759,9 +674,7 @@ async function loadNfcCards() {
 
   if (error) {
     panel.innerHTML = `
-      <p>
-        Could not load NFC cards.
-      </p>
+      <p>Could not load NFC cards.</p>
     `;
 
     console.error(
@@ -772,51 +685,40 @@ async function loadNfcCards() {
     return;
   }
 
-  nfcCardsData =
-    data || [];
+  nfcCardsData = data || [];
 
   if (statActiveCards) {
-    const activeCards =
+    statActiveCards.textContent =
       nfcCardsData.filter(
         (card) =>
           card.is_active === true
       ).length;
-
-    statActiveCards.textContent =
-      activeCards;
   }
 
   renderNfcCards();
 }
 
 /* =========================
-   FEEDBACK INBOX
+   FEEDBACK
 ========================= */
 
 function getFeedbackPanel() {
-  const feedbackPage =
+  const page =
     document.getElementById(
       "feedback-page"
     );
 
-  if (!feedbackPage) {
-    return null;
-  }
-
-  return feedbackPage.querySelector(
-    ".panel"
-  );
+  return page?.querySelector(".panel") || null;
 }
 
 function renderStars(rating) {
-  const safeRating =
-    Math.max(
-      0,
-      Math.min(
-        5,
-        Number(rating) || 0
-      )
-    );
+  const safeRating = Math.max(
+    0,
+    Math.min(
+      5,
+      Number(rating) || 0
+    )
+  );
 
   return (
     "★".repeat(safeRating) +
@@ -825,152 +727,133 @@ function renderStars(rating) {
 }
 
 function renderFeedback() {
-  const panel =
-    getFeedbackPanel();
+  const panel = getFeedbackPanel();
 
   if (!panel) {
     return;
   }
 
   const filteredFeedback =
-    feedbackData.filter(
-      (item) => {
-        const searchableText = [
-          item.business_name,
-          item.business_code,
-          item.card_code,
-          item.comment
-        ]
-          .join(" ")
-          .toLowerCase();
+    feedbackData.filter((item) => {
+      const searchableText = [
+        item.business_name,
+        item.business_code,
+        item.card_code,
+        item.comment
+      ]
+        .join(" ")
+        .toLowerCase();
 
-        const matchesSearch =
-          searchableText.includes(
-            feedbackSearchTerm
-          );
-
-        const matchesRating =
-          feedbackRatingFilter ===
-            "all" ||
-          String(item.rating) ===
-            feedbackRatingFilter;
-
-        return (
-          matchesSearch &&
-          matchesRating
+      const matchesSearch =
+        searchableText.includes(
+          feedbackSearchTerm
         );
-      }
-    );
 
-  const feedbackRows =
-    filteredFeedback
-      .map(
-        (item) => {
-          const businessName =
-            escapeHtml(
-              item.business_name
-            );
+      const matchesRating =
+        feedbackRatingFilter === "all" ||
+        String(item.rating) ===
+          feedbackRatingFilter;
 
-          const businessCode =
-            escapeHtml(
-              item.business_code
-            );
+      return (
+        matchesSearch &&
+        matchesRating
+      );
+    });
 
-          const cardCode =
-            escapeHtml(
-              item.card_code ||
-              "Unknown card"
-            );
+  const rows = filteredFeedback
+    .map((item) => {
+      const businessName =
+        escapeHtml(item.business_name);
 
-          const comment =
-            escapeHtml(
-              item.comment ||
-              "No written comment."
-            );
+      const businessCode =
+        escapeHtml(item.business_code);
 
-          const rating =
-            Number(item.rating) || 0;
+      const cardCode =
+        escapeHtml(
+          item.card_code || "Unknown card"
+        );
 
-          return `
-            <div style="
-              border:1px solid #e5e7eb;
-              border-radius:14px;
-              padding:20px;
-              background:white;
-            ">
+      const comment =
+        escapeHtml(
+          item.comment ||
+            "No written comment."
+        );
+
+      const rating =
+        Number(item.rating) || 0;
+
+      return `
+        <div style="
+          border:1px solid #e5e7eb;
+          border-radius:14px;
+          padding:20px;
+          background:white;
+        ">
+
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-start;
+            gap:18px;
+            flex-wrap:wrap;
+            margin-bottom:14px;
+          ">
+
+            <div>
+              <h3 style="
+                margin:0 0 5px;
+                font-size:18px;
+              ">
+                ${businessName}
+              </h3>
 
               <div style="
-                display:flex;
-                justify-content:space-between;
-                align-items:flex-start;
-                gap:18px;
-                flex-wrap:wrap;
-                margin-bottom:14px;
+                color:#6b7280;
+                font-size:13px;
               ">
-
-                <div>
-
-                  <h3 style="
-                    margin:0 0 5px;
-                    font-size:18px;
-                  ">
-                    ${businessName}
-                  </h3>
-
-                  <div style="
-                    color:#6b7280;
-                    font-size:13px;
-                  ">
-                    ${businessCode}
-                    • Card ${cardCode}
-                  </div>
-
-                </div>
-
-                <div style="
-                  text-align:right;
-                ">
-
-                  <div style="
-                    color:#d97706;
-                    font-size:20px;
-                    letter-spacing:2px;
-                    font-weight:700;
-                  ">
-                    ${renderStars(rating)}
-                  </div>
-
-                  <div style="
-                    color:#6b7280;
-                    font-size:12px;
-                    margin-top:4px;
-                  ">
-                    ${rating}/5 rating
-                  </div>
-
-                </div>
-
+                ${businessCode}
+                • Card ${cardCode}
               </div>
-
-              <div style="
-                background:#f9fafb;
-                border:1px solid #f0f1f3;
-                border-radius:11px;
-                padding:14px 16px;
-                line-height:1.6;
-                color:#374151;
-              ">
-                ${comment}
-              </div>
-
             </div>
-          `;
-        }
-      )
-      .join("");
+
+            <div style="text-align:right;">
+              <div style="
+                color:#d97706;
+                font-size:20px;
+                letter-spacing:2px;
+                font-weight:700;
+              ">
+                ${renderStars(rating)}
+              </div>
+
+              <div style="
+                color:#6b7280;
+                font-size:12px;
+                margin-top:4px;
+              ">
+                ${rating}/5 rating
+              </div>
+            </div>
+
+          </div>
+
+          <div style="
+            background:#f9fafb;
+            border:1px solid #f0f1f3;
+            border-radius:11px;
+            padding:14px 16px;
+            line-height:1.6;
+            color:#374151;
+          ">
+            ${comment}
+          </div>
+
+        </div>
+      `;
+    })
+    .join("");
 
   panel.innerHTML = `
-
     <div style="
       display:flex;
       justify-content:space-between;
@@ -981,7 +864,6 @@ function renderFeedback() {
     ">
 
       <div>
-
         <h2 style="
           margin:0 0 5px;
           font-size:20px;
@@ -1001,7 +883,6 @@ function renderFeedback() {
               : "ies"
           }
         </p>
-
       </div>
 
       <div style="
@@ -1035,7 +916,6 @@ function renderFeedback() {
             background:white;
           "
         >
-
           <option
             value="all"
             ${
@@ -1083,7 +963,6 @@ function renderFeedback() {
           >
             3 stars
           </option>
-
         </select>
 
       </div>
@@ -1094,10 +973,9 @@ function renderFeedback() {
       display:grid;
       gap:12px;
     ">
-
       ${
         filteredFeedback.length
-          ? feedbackRows
+          ? rows
           : `
             <div style="
               padding:50px 20px;
@@ -1110,17 +988,16 @@ function renderFeedback() {
             </div>
           `
       }
-
     </div>
   `;
 
-  const feedbackSearch =
+  const search =
     document.getElementById(
       "feedback-search"
     );
 
-  if (feedbackSearch) {
-    feedbackSearch.addEventListener(
+  if (search) {
+    search.addEventListener(
       "input",
       (event) => {
         feedbackSearchTerm =
@@ -1166,18 +1043,14 @@ function renderFeedback() {
 }
 
 async function loadFeedback() {
-  const panel =
-    getFeedbackPanel();
+  const panel = getFeedbackPanel();
 
   if (!panel) {
     return;
   }
 
-  panel.innerHTML = `
-    <p>
-      Loading feedback...
-    </p>
-  `;
+  panel.innerHTML =
+    "<p>Loading feedback...</p>";
 
   const { data, error } =
     await supabaseClient.rpc(
@@ -1186,9 +1059,7 @@ async function loadFeedback() {
 
   if (error) {
     panel.innerHTML = `
-      <p>
-        Could not load feedback.
-      </p>
+      <p>Could not load feedback.</p>
     `;
 
     console.error(
@@ -1199,15 +1070,283 @@ async function loadFeedback() {
     return;
   }
 
-  feedbackData =
-    data || [];
+  feedbackData = data || [];
+
+  renderFeedback();
+}
+
+/* =========================
+   ANALYTICS
+========================= */
+
+function getAnalyticsPage() {
+  return document.getElementById(
+    "analytics-page"
+  );
+}
+
+function renderAnalytics() {
+  const page = getAnalyticsPage();
+
+  if (!page) {
+    return;
+  }
+
+  const statNumbers =
+    page.querySelectorAll(
+      ".stat-number"
+    );
+
+  if (statNumbers[0]) {
+    statNumbers[0].textContent =
+      analyticsData.nfc_taps;
+  }
+
+  if (statNumbers[1]) {
+    statNumbers[1].textContent =
+      analyticsData.google_redirects;
+  }
+
+  if (statNumbers[2]) {
+    statNumbers[2].textContent =
+      analyticsData.private_feedback;
+  }
+
+  if (statTaps) {
+    statTaps.textContent =
+      analyticsData.nfc_taps;
+  }
+
+  if (statGoogleClicks) {
+    statGoogleClicks.textContent =
+      analyticsData.google_redirects;
+  }
 
   if (statFeedback) {
     statFeedback.textContent =
-      feedbackData.length;
+      analyticsData.private_feedback;
   }
 
-  renderFeedback();
+  const panel =
+    page.querySelector(".panel");
+
+  if (!panel) {
+    return;
+  }
+
+  const taps =
+    Number(
+      analyticsData.nfc_taps
+    ) || 0;
+
+  const redirects =
+    Number(
+      analyticsData.google_redirects
+    ) || 0;
+
+  const feedback =
+    Number(
+      analyticsData.private_feedback
+    ) || 0;
+
+  const resolvedActions =
+    redirects + feedback;
+
+  panel.innerHTML = `
+    <div style="
+      margin-bottom:20px;
+    ">
+      <h2 style="
+        margin:0 0 6px;
+        font-size:20px;
+      ">
+        Performance Overview
+      </h2>
+
+      <p style="
+        margin:0;
+        color:#6b7280;
+        font-size:14px;
+      ">
+        Live activity from your NFC review network.
+      </p>
+    </div>
+
+    <div style="
+      display:grid;
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(180px,1fr)
+        );
+      gap:14px;
+      margin-bottom:20px;
+    ">
+
+      <div style="
+        border:1px solid #e5e7eb;
+        border-radius:14px;
+        padding:18px;
+        background:#f9fafb;
+      ">
+        <div style="
+          color:#6b7280;
+          font-size:12px;
+          margin-bottom:8px;
+        ">
+          GOOGLE REDIRECT RATE
+        </div>
+
+        <div style="
+          font-size:28px;
+          font-weight:800;
+        ">
+          ${percentage(
+            redirects,
+            taps
+          )}
+        </div>
+
+        <div style="
+          color:#6b7280;
+          font-size:13px;
+          margin-top:6px;
+        ">
+          ${redirects} redirect${
+            redirects === 1
+              ? ""
+              : "s"
+          }
+          from ${taps} card opens
+        </div>
+      </div>
+
+      <div style="
+        border:1px solid #e5e7eb;
+        border-radius:14px;
+        padding:18px;
+        background:#f9fafb;
+      ">
+        <div style="
+          color:#6b7280;
+          font-size:12px;
+          margin-bottom:8px;
+        ">
+          PRIVATE FEEDBACK RATE
+        </div>
+
+        <div style="
+          font-size:28px;
+          font-weight:800;
+        ">
+          ${percentage(
+            feedback,
+            taps
+          )}
+        </div>
+
+        <div style="
+          color:#6b7280;
+          font-size:13px;
+          margin-top:6px;
+        ">
+          ${feedback} feedback entr${
+            feedback === 1
+              ? "y"
+              : "ies"
+          }
+        </div>
+      </div>
+
+      <div style="
+        border:1px solid #e5e7eb;
+        border-radius:14px;
+        padding:18px;
+        background:#f9fafb;
+      ">
+        <div style="
+          color:#6b7280;
+          font-size:12px;
+          margin-bottom:8px;
+        ">
+          RECORDED OUTCOMES
+        </div>
+
+        <div style="
+          font-size:28px;
+          font-weight:800;
+        ">
+          ${resolvedActions}
+        </div>
+
+        <div style="
+          color:#6b7280;
+          font-size:13px;
+          margin-top:6px;
+        ">
+          Google redirects + private feedback
+        </div>
+      </div>
+
+    </div>
+
+    <div style="
+      padding:15px 16px;
+      border-radius:12px;
+      background:#f9fafb;
+      border:1px solid #e5e7eb;
+      color:#6b7280;
+      font-size:13px;
+      line-height:1.6;
+    ">
+      <strong style="color:#374151;">
+        Tracking note:
+      </strong>
+      card-open tracking started when the new analytics code was deployed,
+      so older visits from before that deployment are not included in the NFC
+      Taps total.
+    </div>
+  `;
+}
+
+async function loadAnalytics() {
+  const { data, error } =
+    await supabaseClient.rpc(
+      "get_admin_analytics"
+    );
+
+  if (error) {
+    console.error(
+      "Analytics loading error:",
+      error
+    );
+
+    return;
+  }
+
+  const row =
+    Array.isArray(data)
+      ? data[0]
+      : data;
+
+  analyticsData = {
+    nfc_taps:
+      Number(
+        row?.nfc_taps
+      ) || 0,
+
+    google_redirects:
+      Number(
+        row?.google_redirects
+      ) || 0,
+
+    private_feedback:
+      Number(
+        row?.private_feedback
+      ) || 0
+  };
+
+  renderAnalytics();
 }
 
 /* =========================
@@ -1216,19 +1355,13 @@ async function loadFeedback() {
 
 async function createCustomer() {
   const businessName =
-    wizardBusinessName
-      .value
-      .trim();
+    wizardBusinessName.value.trim();
 
   const ownerEmail =
-    wizardOwnerEmail
-      .value
-      .trim();
+    wizardOwnerEmail.value.trim();
 
   const googleReviewUrl =
-    wizardGoogleUrl
-      .value
-      .trim();
+    wizardGoogleUrl.value.trim();
 
   const businessCode =
     wizardBusinessCode
@@ -1237,9 +1370,7 @@ async function createCustomer() {
       .toUpperCase();
 
   const cardCount =
-    Number(
-      wizardCardCount.value
-    );
+    Number(wizardCardCount.value);
 
   if (
     !businessName ||
@@ -1255,9 +1386,7 @@ async function createCustomer() {
   }
 
   try {
-    new URL(
-      googleReviewUrl
-    );
+    new URL(googleReviewUrl);
   } catch {
     alert(
       "Please enter a valid Google review link."
@@ -1266,8 +1395,7 @@ async function createCustomer() {
     return;
   }
 
-  wizardCreateButton.disabled =
-    true;
+  wizardCreateButton.disabled = true;
 
   wizardCreateButton.textContent =
     "Creating customer...";
@@ -1293,8 +1421,7 @@ async function createCustomer() {
       }
     );
 
-  wizardCreateButton.disabled =
-    false;
+  wizardCreateButton.disabled = false;
 
   wizardCreateButton.textContent =
     "Create Customer";
@@ -1331,22 +1458,20 @@ async function createCustomer() {
 
   const cardDetails =
     createdCards
-      .map(
-        (row) => {
-          const cardCode =
-            row.card_code;
+      .map((row) => {
+        const cardCode =
+          row.card_code;
 
-          const cardUrl =
-            `${window.location.origin}/?card=${encodeURIComponent(
-              cardCode
-            )}`;
+        const cardUrl =
+          `${window.location.origin}/?card=${encodeURIComponent(
+            cardCode
+          )}`;
 
-          return (
-            `${cardCode}\n` +
-            `${cardUrl}`
-          );
-        }
-      )
+        return (
+          `${cardCode}\n` +
+          `${cardUrl}`
+        );
+      })
       .join("\n\n");
 
   alert(
@@ -1358,8 +1483,11 @@ async function createCustomer() {
 
   clearWizard();
 
-  await loadBusinesses();
-  await loadNfcCards();
+  await Promise.all([
+    loadBusinesses(),
+    loadNfcCards(),
+    loadAnalytics()
+  ]);
 
   if (
     typeof window.openAdminSection ===
@@ -1385,7 +1513,8 @@ async function showDashboard() {
   await Promise.all([
     loadBusinesses(),
     loadNfcCards(),
-    loadFeedback()
+    loadFeedback(),
+    loadAnalytics()
   ]);
 }
 
@@ -1397,8 +1526,7 @@ async function checkLogin() {
   const {
     data: { session }
   } =
-    await supabaseClient.auth
-      .getSession();
+    await supabaseClient.auth.getSession();
 
   if (session) {
     await showDashboard();
@@ -1408,7 +1536,7 @@ async function checkLogin() {
 }
 
 /* =========================
-   BUSINESS CONTROLS
+   CONTROLS
 ========================= */
 
 if (businessSearch) {
@@ -1432,28 +1560,17 @@ if (businessSort) {
   );
 }
 
-/* =========================
-   NFC NAVIGATION
-========================= */
-
 const nfcNavigationButton =
   document.querySelector(
     '[data-section="nfc-page"]'
   );
 
 if (nfcNavigationButton) {
-  nfcNavigationButton
-    .addEventListener(
-      "click",
-      async () => {
-        await loadNfcCards();
-      }
-    );
+  nfcNavigationButton.addEventListener(
+    "click",
+    loadNfcCards
+  );
 }
-
-/* =========================
-   FEEDBACK NAVIGATION
-========================= */
 
 const feedbackNavigationButton =
   document.querySelector(
@@ -1461,18 +1578,23 @@ const feedbackNavigationButton =
   );
 
 if (feedbackNavigationButton) {
-  feedbackNavigationButton
-    .addEventListener(
-      "click",
-      async () => {
-        await loadFeedback();
-      }
-    );
+  feedbackNavigationButton.addEventListener(
+    "click",
+    loadFeedback
+  );
 }
 
-/* =========================
-   CREATE CUSTOMER BUTTON
-========================= */
+const analyticsNavigationButton =
+  document.querySelector(
+    '[data-section="analytics-page"]'
+  );
+
+if (analyticsNavigationButton) {
+  analyticsNavigationButton.addEventListener(
+    "click",
+    loadAnalytics
+  );
+}
 
 if (wizardCreateButton) {
   wizardCreateButton.addEventListener(
@@ -1538,26 +1660,24 @@ loginButton.addEventListener(
 logoutButton.addEventListener(
   "click",
   async () => {
-    await supabaseClient.auth
-      .signOut();
+    await supabaseClient.auth.signOut();
 
     showLogin();
   }
 );
 
 /* =========================
-   AUTH CHANGES
+   AUTH
 ========================= */
 
-supabaseClient.auth
-  .onAuthStateChange(
-    async (_event, session) => {
-      if (session) {
-        await showDashboard();
-      } else {
-        showLogin();
-      }
+supabaseClient.auth.onAuthStateChange(
+  async (_event, session) => {
+    if (session) {
+      await showDashboard();
+    } else {
+      showLogin();
     }
-  );
+  }
+);
 
 checkLogin();
