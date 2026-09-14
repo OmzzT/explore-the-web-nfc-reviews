@@ -1,123 +1,82 @@
-const supabaseUrl =
-  window.APP_CONFIG?.SUPABASE_URL;
-
-const supabaseKey =
-  window.APP_CONFIG?.SUPABASE_PUBLISHABLE_KEY;
-
+const supabaseUrl = window.APP_CONFIG?.SUPABASE_URL;
+const supabaseKey = window.APP_CONFIG?.SUPABASE_PUBLISHABLE_KEY;
 
 /* =========================
    PAGE ELEMENTS
 ========================= */
 
-const loginSection =
-  document.getElementById("login-section");
+const loginSection = document.getElementById("login-section");
+const dashboard = document.getElementById("dashboard");
 
-const dashboard =
-  document.getElementById("dashboard");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const loginButton = document.getElementById("login-button");
+const logoutButton = document.getElementById("logout-button");
+const loginError = document.getElementById("login-error");
 
-const emailInput =
-  document.getElementById("email");
+const businessesContainer = document.getElementById("businesses");
+const businessSearch = document.getElementById("business-search");
+const businessStatusFilter = document.getElementById(
+  "business-status-filter"
+);
+const businessSort = document.getElementById("business-sort");
 
-const passwordInput =
-  document.getElementById("password");
-
-const loginButton =
-  document.getElementById("login-button");
-
-const logoutButton =
-  document.getElementById("logout-button");
-
-const loginError =
-  document.getElementById("login-error");
-
-const businessesContainer =
-  document.getElementById("businesses");
-
-const businessSearch =
-  document.getElementById("business-search");
-
-const businessStatusFilter =
-  document.getElementById(
-    "business-status-filter"
-  );
-
-const businessSort =
-  document.getElementById(
-    "business-sort"
-  );
-
-const statBusinesses =
-  document.getElementById(
-    "stat-businesses"
-  );
-
-const statActiveCards =
-  document.getElementById(
-    "stat-active-cards"
-  );
-
+const statBusinesses = document.getElementById("stat-businesses");
+const statActiveCards = document.getElementById("stat-active-cards");
+const statFeedback = document.getElementById("stat-feedback");
 
 /* =========================
    NEW CUSTOMER ELEMENTS
 ========================= */
 
-const wizardBusinessName =
-  document.getElementById(
-    "wizard-business-name"
-  );
+const wizardBusinessName = document.getElementById(
+  "wizard-business-name"
+);
 
-const wizardOwnerEmail =
-  document.getElementById(
-    "wizard-owner-email"
-  );
+const wizardOwnerEmail = document.getElementById(
+  "wizard-owner-email"
+);
 
-const wizardGoogleUrl =
-  document.getElementById(
-    "wizard-google-url"
-  );
+const wizardGoogleUrl = document.getElementById(
+  "wizard-google-url"
+);
 
-const wizardBusinessCode =
-  document.getElementById(
-    "wizard-business-code"
-  );
+const wizardBusinessCode = document.getElementById(
+  "wizard-business-code"
+);
 
-const wizardCardCount =
-  document.getElementById(
-    "wizard-card-count"
-  );
+const wizardCardCount = document.getElementById(
+  "wizard-card-count"
+);
 
-const wizardCreateButton =
-  document.getElementById(
-    "wizard-create-button"
-  );
-
+const wizardCreateButton = document.getElementById(
+  "wizard-create-button"
+);
 
 /* =========================
    DATA
 ========================= */
 
 let businessesData = [];
-
 let nfcCardsData = [];
+let feedbackData = [];
 
 let nfcSearchTerm = "";
-
+let feedbackSearchTerm = "";
+let feedbackRatingFilter = "all";
 
 /* =========================
    CONFIGURATION
 ========================= */
 
 if (!supabaseUrl || !supabaseKey) {
-
   loginError.textContent =
     "Website configuration could not be loaded.";
 
   throw new Error(
     "Missing Supabase configuration."
   );
-
 }
-
 
 const supabaseClient =
   window.supabase.createClient(
@@ -125,37 +84,27 @@ const supabaseClient =
     supabaseKey
   );
 
-
 /* =========================
    HELPERS
 ========================= */
 
 function escapeHtml(value) {
-
   return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-
 }
 
-
 function formatDate(value) {
-
   if (!value) {
     return "Unknown";
   }
 
-  const date =
-    new Date(value);
+  const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return "Unknown";
   }
 
@@ -169,23 +118,14 @@ function formatDate(value) {
       minute: "2-digit"
     }
   );
-
 }
-
 
 function showLogin() {
-
-  loginSection.style.display =
-    "flex";
-
-  dashboard.style.display =
-    "none";
-
+  loginSection.style.display = "flex";
+  dashboard.style.display = "none";
 }
 
-
 function clearWizard() {
-
   if (wizardBusinessName) {
     wizardBusinessName.value = "";
   }
@@ -205,20 +145,16 @@ function clearWizard() {
   if (wizardCardCount) {
     wizardCardCount.value = "1";
   }
-
 }
-
 
 /* =========================
    BUSINESSES
 ========================= */
 
 function renderBusinesses() {
-
   if (!businessesContainer) {
     return;
   }
-
 
   const searchTerm =
     businessSearch
@@ -226,21 +162,17 @@ function renderBusinesses() {
       .trim()
       .toLowerCase() || "";
 
-
   const status =
     businessStatusFilter?.value ||
     "all";
-
 
   const sort =
     businessSort?.value ||
     "newest";
 
-
   let filteredBusinesses =
     businessesData.filter(
       (business) => {
-
         const searchableText = [
           business.business_name,
           business.business_code,
@@ -249,79 +181,58 @@ function renderBusinesses() {
           .join(" ")
           .toLowerCase();
 
-
         const matchesSearch =
           searchableText.includes(
             searchTerm
           );
 
-
         let matchesStatus = true;
 
-
         if (status === "active") {
-
           matchesStatus =
             business.is_active === true;
-
         }
-
 
         if (status === "inactive") {
-
           matchesStatus =
             business.is_active === false;
-
         }
-
 
         return (
           matchesSearch &&
           matchesStatus
         );
-
       }
     );
-
 
   filteredBusinesses =
     [...filteredBusinesses].sort(
       (a, b) => {
-
         if (sort === "oldest") {
-
           return (
             new Date(a.created_at) -
             new Date(b.created_at)
           );
-
         }
 
-
         if (sort === "name") {
-
           return String(
             a.business_name
           ).localeCompare(
             String(b.business_name)
           );
-
         }
-
 
         return (
           new Date(b.created_at) -
           new Date(a.created_at)
         );
-
       }
     );
-
 
   if (
     filteredBusinesses.length === 0
   ) {
-
     businessesContainer.innerHTML = `
       <p style="color:#6b7280;">
         No businesses match your search.
@@ -329,15 +240,12 @@ function renderBusinesses() {
     `;
 
     return;
-
   }
-
 
   businessesContainer.innerHTML =
     filteredBusinesses
       .map(
         (business) => {
-
           const businessName =
             escapeHtml(
               business.business_name
@@ -358,7 +266,6 @@ function renderBusinesses() {
               business.google_review_url
             );
 
-
           return `
             <div>
 
@@ -370,7 +277,6 @@ function renderBusinesses() {
                 <strong>
                   Business code:
                 </strong>
-
                 ${businessCode}
               </p>
 
@@ -378,7 +284,6 @@ function renderBusinesses() {
                 <strong>
                   Owner email:
                 </strong>
-
                 ${ownerEmail}
               </p>
 
@@ -386,7 +291,6 @@ function renderBusinesses() {
                 <strong>
                   Status:
                 </strong>
-
                 ${
                   business.is_active
                     ? "Active"
@@ -406,33 +310,25 @@ function renderBusinesses() {
 
             </div>
           `;
-
         }
       )
       .join("");
-
 }
 
-
 async function loadBusinesses() {
-
   if (!businessesContainer) {
     return;
   }
 
-
   businessesContainer.innerHTML =
     "<p>Loading businesses...</p>";
-
 
   const { data, error } =
     await supabaseClient.rpc(
       "get_admin_businesses"
     );
 
-
   if (error) {
-
     businessesContainer.innerHTML = `
       <p>
         Could not load businesses.
@@ -445,33 +341,24 @@ async function loadBusinesses() {
     );
 
     return;
-
   }
-
 
   businessesData =
     data || [];
 
-
   if (statBusinesses) {
-
     statBusinesses.textContent =
       businessesData.length;
-
   }
 
-
   renderBusinesses();
-
 }
-
 
 /* =========================
    NFC CARD MANAGER
 ========================= */
 
 function getNfcPanel() {
-
   const nfcPage =
     document.getElementById(
       "nfc-page"
@@ -484,25 +371,19 @@ function getNfcPanel() {
   return nfcPage.querySelector(
     ".panel"
   );
-
 }
 
-
 function renderNfcCards() {
-
   const panel =
     getNfcPanel();
-
 
   if (!panel) {
     return;
   }
 
-
   const filteredCards =
     nfcCardsData.filter(
       (card) => {
-
         const searchableText = [
           card.card_code,
           card.business_name,
@@ -511,20 +392,16 @@ function renderNfcCards() {
           .join(" ")
           .toLowerCase();
 
-
         return searchableText.includes(
           nfcSearchTerm
         );
-
       }
     );
-
 
   const cardRows =
     filteredCards
       .map(
         (card) => {
-
           const cardCode =
             escapeHtml(
               card.card_code
@@ -537,7 +414,8 @@ function renderNfcCards() {
 
           const label =
             escapeHtml(
-              card.label || "NFC Card"
+              card.label ||
+              "NFC Card"
             );
 
           const createdAt =
@@ -551,7 +429,6 @@ function renderNfcCards() {
             `${window.location.origin}/?card=${encodeURIComponent(
               card.card_code
             )}`;
-
 
           return `
             <div style="
@@ -595,7 +472,6 @@ function renderNfcCards() {
 
               </div>
 
-
               <div>
 
                 <div style="
@@ -619,7 +495,6 @@ function renderNfcCards() {
                 </div>
 
               </div>
-
 
               <div>
 
@@ -656,7 +531,6 @@ function renderNfcCards() {
                 </span>
 
               </div>
-
 
               <div style="
                 display:flex;
@@ -705,24 +579,20 @@ function renderNfcCards() {
 
             </div>
           `;
-
         }
       )
       .join("");
 
-
   panel.innerHTML = `
 
-    <div
-      style="
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:16px;
-        flex-wrap:wrap;
-        margin-bottom:18px;
-      "
-    >
+    <div style="
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    ">
 
       <div>
 
@@ -749,7 +619,6 @@ function renderNfcCards() {
 
       </div>
 
-
       <input
         id="nfc-card-search"
         type="search"
@@ -767,7 +636,6 @@ function renderNfcCards() {
       >
 
     </div>
-
 
     <div
       id="nfc-card-list"
@@ -796,19 +664,15 @@ function renderNfcCards() {
     </div>
   `;
 
-
   const searchInput =
     document.getElementById(
       "nfc-card-search"
     );
 
-
   if (searchInput) {
-
     searchInput.addEventListener(
       "input",
       (event) => {
-
         nfcSearchTerm =
           event.target.value
             .trim()
@@ -822,21 +686,16 @@ function renderNfcCards() {
           );
 
         if (nextSearch) {
-
           nextSearch.focus();
 
           nextSearch.setSelectionRange(
             nextSearch.value.length,
             nextSearch.value.length
           );
-
         }
-
       }
     );
-
   }
-
 
   document
     .querySelectorAll(
@@ -844,17 +703,13 @@ function renderNfcCards() {
     )
     .forEach(
       (button) => {
-
         button.addEventListener(
           "click",
           async () => {
-
             const url =
               button.dataset.url;
 
-
             try {
-
               await navigator.clipboard
                 .writeText(url);
 
@@ -866,42 +721,30 @@ function renderNfcCards() {
 
               setTimeout(
                 () => {
-
                   button.textContent =
                     oldText;
-
                 },
                 1500
               );
-
             } catch {
-
               window.prompt(
                 "Copy this NFC URL:",
                 url
               );
-
             }
-
           }
         );
-
       }
     );
-
 }
 
-
 async function loadNfcCards() {
-
   const panel =
     getNfcPanel();
-
 
   if (!panel) {
     return;
   }
-
 
   panel.innerHTML = `
     <p>
@@ -909,15 +752,12 @@ async function loadNfcCards() {
     </p>
   `;
 
-
   const { data, error } =
     await supabaseClient.rpc(
       "get_admin_nfc_cards"
     );
 
-
   if (error) {
-
     panel.innerHTML = `
       <p>
         Could not load NFC cards.
@@ -930,16 +770,12 @@ async function loadNfcCards() {
     );
 
     return;
-
   }
-
 
   nfcCardsData =
     data || [];
 
-
   if (statActiveCards) {
-
     const activeCards =
       nfcCardsData.filter(
         (card) =>
@@ -948,21 +784,437 @@ async function loadNfcCards() {
 
     statActiveCards.textContent =
       activeCards;
-
   }
 
-
   renderNfcCards();
-
 }
 
+/* =========================
+   FEEDBACK INBOX
+========================= */
+
+function getFeedbackPanel() {
+  const feedbackPage =
+    document.getElementById(
+      "feedback-page"
+    );
+
+  if (!feedbackPage) {
+    return null;
+  }
+
+  return feedbackPage.querySelector(
+    ".panel"
+  );
+}
+
+function renderStars(rating) {
+  const safeRating =
+    Math.max(
+      0,
+      Math.min(
+        5,
+        Number(rating) || 0
+      )
+    );
+
+  return (
+    "★".repeat(safeRating) +
+    "☆".repeat(5 - safeRating)
+  );
+}
+
+function renderFeedback() {
+  const panel =
+    getFeedbackPanel();
+
+  if (!panel) {
+    return;
+  }
+
+  const filteredFeedback =
+    feedbackData.filter(
+      (item) => {
+        const searchableText = [
+          item.business_name,
+          item.business_code,
+          item.card_code,
+          item.comment
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        const matchesSearch =
+          searchableText.includes(
+            feedbackSearchTerm
+          );
+
+        const matchesRating =
+          feedbackRatingFilter ===
+            "all" ||
+          String(item.rating) ===
+            feedbackRatingFilter;
+
+        return (
+          matchesSearch &&
+          matchesRating
+        );
+      }
+    );
+
+  const feedbackRows =
+    filteredFeedback
+      .map(
+        (item) => {
+          const businessName =
+            escapeHtml(
+              item.business_name
+            );
+
+          const businessCode =
+            escapeHtml(
+              item.business_code
+            );
+
+          const cardCode =
+            escapeHtml(
+              item.card_code ||
+              "Unknown card"
+            );
+
+          const comment =
+            escapeHtml(
+              item.comment ||
+              "No written comment."
+            );
+
+          const rating =
+            Number(item.rating) || 0;
+
+          return `
+            <div style="
+              border:1px solid #e5e7eb;
+              border-radius:14px;
+              padding:20px;
+              background:white;
+            ">
+
+              <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:flex-start;
+                gap:18px;
+                flex-wrap:wrap;
+                margin-bottom:14px;
+              ">
+
+                <div>
+
+                  <h3 style="
+                    margin:0 0 5px;
+                    font-size:18px;
+                  ">
+                    ${businessName}
+                  </h3>
+
+                  <div style="
+                    color:#6b7280;
+                    font-size:13px;
+                  ">
+                    ${businessCode}
+                    • Card ${cardCode}
+                  </div>
+
+                </div>
+
+                <div style="
+                  text-align:right;
+                ">
+
+                  <div style="
+                    color:#d97706;
+                    font-size:20px;
+                    letter-spacing:2px;
+                    font-weight:700;
+                  ">
+                    ${renderStars(rating)}
+                  </div>
+
+                  <div style="
+                    color:#6b7280;
+                    font-size:12px;
+                    margin-top:4px;
+                  ">
+                    ${rating}/5 rating
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div style="
+                background:#f9fafb;
+                border:1px solid #f0f1f3;
+                border-radius:11px;
+                padding:14px 16px;
+                line-height:1.6;
+                color:#374151;
+              ">
+                ${comment}
+              </div>
+
+            </div>
+          `;
+        }
+      )
+      .join("");
+
+  panel.innerHTML = `
+
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    ">
+
+      <div>
+
+        <h2 style="
+          margin:0 0 5px;
+          font-size:20px;
+        ">
+          Feedback Inbox
+        </h2>
+
+        <p style="
+          margin:0;
+          color:#6b7280;
+          font-size:14px;
+        ">
+          ${feedbackData.length}
+          feedback entr${
+            feedbackData.length === 1
+              ? "y"
+              : "ies"
+          }
+        </p>
+
+      </div>
+
+      <div style="
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+      ">
+
+        <input
+          id="feedback-search"
+          type="search"
+          value="${escapeHtml(
+            feedbackSearchTerm
+          )}"
+          placeholder="Search business or comment..."
+          style="
+            min-width:280px;
+            padding:11px 13px;
+            border:1px solid #d1d5db;
+            border-radius:10px;
+            outline:none;
+          "
+        >
+
+        <select
+          id="feedback-rating-filter"
+          style="
+            padding:11px 13px;
+            border:1px solid #d1d5db;
+            border-radius:10px;
+            background:white;
+          "
+        >
+
+          <option
+            value="all"
+            ${
+              feedbackRatingFilter ===
+              "all"
+                ? "selected"
+                : ""
+            }
+          >
+            All ratings
+          </option>
+
+          <option
+            value="1"
+            ${
+              feedbackRatingFilter ===
+              "1"
+                ? "selected"
+                : ""
+            }
+          >
+            1 star
+          </option>
+
+          <option
+            value="2"
+            ${
+              feedbackRatingFilter ===
+              "2"
+                ? "selected"
+                : ""
+            }
+          >
+            2 stars
+          </option>
+
+          <option
+            value="3"
+            ${
+              feedbackRatingFilter ===
+              "3"
+                ? "selected"
+                : ""
+            }
+          >
+            3 stars
+          </option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+    <div style="
+      display:grid;
+      gap:12px;
+    ">
+
+      ${
+        filteredFeedback.length
+          ? feedbackRows
+          : `
+            <div style="
+              padding:50px 20px;
+              text-align:center;
+              color:#6b7280;
+              border:1px dashed #d1d5db;
+              border-radius:14px;
+            ">
+              No feedback matches your filters.
+            </div>
+          `
+      }
+
+    </div>
+  `;
+
+  const feedbackSearch =
+    document.getElementById(
+      "feedback-search"
+    );
+
+  if (feedbackSearch) {
+    feedbackSearch.addEventListener(
+      "input",
+      (event) => {
+        feedbackSearchTerm =
+          event.target.value
+            .trim()
+            .toLowerCase();
+
+        renderFeedback();
+
+        const nextSearch =
+          document.getElementById(
+            "feedback-search"
+          );
+
+        if (nextSearch) {
+          nextSearch.focus();
+
+          nextSearch.setSelectionRange(
+            nextSearch.value.length,
+            nextSearch.value.length
+          );
+        }
+      }
+    );
+  }
+
+  const ratingFilter =
+    document.getElementById(
+      "feedback-rating-filter"
+    );
+
+  if (ratingFilter) {
+    ratingFilter.addEventListener(
+      "change",
+      (event) => {
+        feedbackRatingFilter =
+          event.target.value;
+
+        renderFeedback();
+      }
+    );
+  }
+}
+
+async function loadFeedback() {
+  const panel =
+    getFeedbackPanel();
+
+  if (!panel) {
+    return;
+  }
+
+  panel.innerHTML = `
+    <p>
+      Loading feedback...
+    </p>
+  `;
+
+  const { data, error } =
+    await supabaseClient.rpc(
+      "get_admin_feedback"
+    );
+
+  if (error) {
+    panel.innerHTML = `
+      <p>
+        Could not load feedback.
+      </p>
+    `;
+
+    console.error(
+      "Feedback loading error:",
+      error
+    );
+
+    return;
+  }
+
+  feedbackData =
+    data || [];
+
+  if (statFeedback) {
+    statFeedback.textContent =
+      feedbackData.length;
+  }
+
+  renderFeedback();
+}
 
 /* =========================
    CREATE CUSTOMER
 ========================= */
 
 async function createCustomer() {
-
   const businessName =
     wizardBusinessName
       .value
@@ -989,46 +1241,36 @@ async function createCustomer() {
       wizardCardCount.value
     );
 
-
   if (
     !businessName ||
     !ownerEmail ||
     !googleReviewUrl ||
     !businessCode
   ) {
-
     alert(
       "Please complete all customer fields."
     );
 
     return;
-
   }
 
-
   try {
-
     new URL(
       googleReviewUrl
     );
-
   } catch {
-
     alert(
       "Please enter a valid Google review link."
     );
 
     return;
-
   }
-
 
   wizardCreateButton.disabled =
     true;
 
   wizardCreateButton.textContent =
     "Creating customer...";
-
 
   const { data, error } =
     await supabaseClient.rpc(
@@ -1051,21 +1293,17 @@ async function createCustomer() {
       }
     );
 
-
   wizardCreateButton.disabled =
     false;
 
   wizardCreateButton.textContent =
     "Create Customer";
 
-
   if (error) {
-
     console.error(
       "Create customer error:",
       error
     );
-
 
     if (
       error.message
@@ -1074,34 +1312,27 @@ async function createCustomer() {
           "business code already exists"
         )
     ) {
-
       alert(
         "That business code already exists. Please choose another code."
       );
 
       return;
-
     }
-
 
     alert(
       "Customer could not be created. Please try again."
     );
 
     return;
-
   }
-
 
   const createdCards =
     data || [];
-
 
   const cardDetails =
     createdCards
       .map(
         (row) => {
-
           const cardCode =
             row.card_code;
 
@@ -1110,16 +1341,13 @@ async function createCustomer() {
               cardCode
             )}`;
 
-
           return (
             `${cardCode}\n` +
             `${cardUrl}`
           );
-
         }
       )
       .join("\n\n");
-
 
   alert(
     `Customer created successfully! ✅\n\n` +
@@ -1128,109 +1356,81 @@ async function createCustomer() {
     `NFC card(s):\n${cardDetails}`
   );
 
-
   clearWizard();
 
-
   await loadBusinesses();
-
   await loadNfcCards();
-
 
   if (
     typeof window.openAdminSection ===
     "function"
   ) {
-
     window.openAdminSection(
       "businesses-page"
     );
-
   }
-
 }
-
 
 /* =========================
    DASHBOARD
 ========================= */
 
 async function showDashboard() {
-
   loginSection.style.display =
     "none";
 
   dashboard.style.display =
     "block";
 
-
   await Promise.all([
     loadBusinesses(),
-    loadNfcCards()
+    loadNfcCards(),
+    loadFeedback()
   ]);
-
 }
-
 
 /* =========================
    LOGIN CHECK
 ========================= */
 
 async function checkLogin() {
-
   const {
     data: { session }
   } =
     await supabaseClient.auth
       .getSession();
 
-
   if (session) {
-
     await showDashboard();
-
   } else {
-
     showLogin();
-
   }
-
 }
-
 
 /* =========================
    BUSINESS CONTROLS
 ========================= */
 
 if (businessSearch) {
-
   businessSearch.addEventListener(
     "input",
     renderBusinesses
   );
-
 }
 
-
 if (businessStatusFilter) {
-
   businessStatusFilter.addEventListener(
     "change",
     renderBusinesses
   );
-
 }
 
-
 if (businessSort) {
-
   businessSort.addEventListener(
     "change",
     renderBusinesses
   );
-
 }
-
 
 /* =========================
    NFC NAVIGATION
@@ -1241,35 +1441,45 @@ const nfcNavigationButton =
     '[data-section="nfc-page"]'
   );
 
-
 if (nfcNavigationButton) {
-
   nfcNavigationButton
     .addEventListener(
       "click",
       async () => {
-
         await loadNfcCards();
-
       }
     );
-
 }
 
+/* =========================
+   FEEDBACK NAVIGATION
+========================= */
+
+const feedbackNavigationButton =
+  document.querySelector(
+    '[data-section="feedback-page"]'
+  );
+
+if (feedbackNavigationButton) {
+  feedbackNavigationButton
+    .addEventListener(
+      "click",
+      async () => {
+        await loadFeedback();
+      }
+    );
+}
 
 /* =========================
    CREATE CUSTOMER BUTTON
 ========================= */
 
 if (wizardCreateButton) {
-
   wizardCreateButton.addEventListener(
     "click",
     createCustomer
   );
-
 }
-
 
 /* =========================
    LOGIN
@@ -1278,33 +1488,24 @@ if (wizardCreateButton) {
 loginButton.addEventListener(
   "click",
   async () => {
-
     const email =
       emailInput.value.trim();
 
     const password =
       passwordInput.value;
 
-
     loginError.textContent = "";
 
-
     if (!email || !password) {
-
       loginError.textContent =
         "Please enter your email and password.";
 
       return;
-
     }
 
-
-    loginButton.disabled =
-      true;
-
+    loginButton.disabled = true;
     loginButton.textContent =
       "Logging in...";
-
 
     const { error } =
       await supabaseClient.auth
@@ -1313,32 +1514,22 @@ loginButton.addEventListener(
           password
         });
 
-
-    loginButton.disabled =
-      false;
-
+    loginButton.disabled = false;
     loginButton.textContent =
       "Log in";
 
-
     if (error) {
-
       loginError.textContent =
         "Incorrect email or password.";
 
       return;
-
     }
-
 
     passwordInput.value = "";
 
-
     await showDashboard();
-
   }
 );
-
 
 /* =========================
    LOGOUT
@@ -1347,15 +1538,12 @@ loginButton.addEventListener(
 logoutButton.addEventListener(
   "click",
   async () => {
-
     await supabaseClient.auth
       .signOut();
 
     showLogin();
-
   }
 );
-
 
 /* =========================
    AUTH CHANGES
@@ -1364,19 +1552,12 @@ logoutButton.addEventListener(
 supabaseClient.auth
   .onAuthStateChange(
     async (_event, session) => {
-
       if (session) {
-
         await showDashboard();
-
       } else {
-
         showLogin();
-
       }
-
     }
   );
-
 
 checkLogin();
