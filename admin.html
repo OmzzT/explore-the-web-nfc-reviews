@@ -37,7 +37,12 @@
       justify-content: center;
       padding: 24px;
       background:
-        radial-gradient(circle at top left, #ffffff 0, #f3f4f6 45%, #eceef2 100%);
+        radial-gradient(
+          circle at top left,
+          #ffffff 0,
+          #f3f4f6 45%,
+          #eceef2 100%
+        );
     }
 
     .login-card {
@@ -105,7 +110,7 @@
       font-size: 14px;
     }
 
-    /* DASHBOARD */
+    /* APP */
 
     #dashboard {
       display: none;
@@ -117,6 +122,8 @@
       grid-template-columns: 250px 1fr;
       min-height: 100vh;
     }
+
+    /* SIDEBAR */
 
     .sidebar {
       background: #111827;
@@ -159,6 +166,7 @@
       border-radius: 10px;
       background: transparent;
       color: #d1d5db;
+      transition: 0.15s ease;
     }
 
     .nav-button:hover,
@@ -183,9 +191,19 @@
       color: white;
     }
 
+    /* MAIN */
+
     .main-content {
       padding: 32px;
       overflow: hidden;
+    }
+
+    .content-section {
+      display: none;
+    }
+
+    .content-section.active {
+      display: block;
     }
 
     .page-header {
@@ -206,7 +224,7 @@
       color: #6b7280;
     }
 
-    #add-customer-button {
+    .primary-button {
       border: 0;
       background: #111827;
       color: white;
@@ -215,6 +233,17 @@
       font-weight: 700;
       white-space: nowrap;
     }
+
+    .secondary-button {
+      border: 1px solid #d1d5db;
+      background: white;
+      color: #111827;
+      padding: 11px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    /* STAT CARDS */
 
     .stats-grid {
       display: grid;
@@ -241,11 +270,14 @@
       font-weight: 800;
     }
 
+    /* PANELS */
+
     .panel {
       background: white;
       border: 1px solid #e5e7eb;
       border-radius: 18px;
       padding: 22px;
+      margin-bottom: 20px;
     }
 
     .panel-header {
@@ -260,6 +292,14 @@
       margin: 0;
       font-size: 20px;
     }
+
+    .panel-subtitle {
+      color: #6b7280;
+      margin: 6px 0 0;
+      font-size: 14px;
+    }
+
+    /* BUSINESSES */
 
     .business-toolbar {
       display: flex;
@@ -300,12 +340,127 @@
       margin-top: 0;
     }
 
+    /* PLACEHOLDER / EMPTY PAGES */
+
+    .empty-state {
+      padding: 55px 25px;
+      text-align: center;
+      border: 1px dashed #d1d5db;
+      border-radius: 16px;
+      background: #fafafa;
+    }
+
+    .empty-icon {
+      width: 54px;
+      height: 54px;
+      margin: 0 auto 18px;
+      border-radius: 15px;
+      background: #eef0f3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 25px;
+    }
+
+    .empty-state h3 {
+      margin: 0 0 8px;
+    }
+
+    .empty-state p {
+      margin: 0 auto;
+      max-width: 560px;
+      color: #6b7280;
+      line-height: 1.6;
+    }
+
+    /* NEW CUSTOMER */
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px 13px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      outline: none;
+      background: white;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #111827;
+    }
+
+    .form-actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .info-banner {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: #4b5563;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    /* SETTINGS */
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .settings-row:last-child {
+      border-bottom: 0;
+    }
+
+    .settings-row h3 {
+      margin: 0 0 5px;
+      font-size: 15px;
+    }
+
+    .settings-row p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 13px;
+    }
+
     .coming-soon {
       color: #9ca3af;
       font-size: 12px;
       margin-top: 28px;
       text-align: center;
     }
+
+    /* MOBILE */
 
     @media (max-width: 1100px) {
       .stats-grid {
@@ -348,6 +503,14 @@
       .business-toolbar {
         width: 100%;
       }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-group.full-width {
+        grid-column: auto;
+      }
     }
   </style>
 </head>
@@ -357,6 +520,7 @@
   <!-- LOGIN -->
 
   <div id="login-section">
+
     <div class="login-card">
 
       <div class="brand-badge">
@@ -365,7 +529,10 @@
       </div>
 
       <h1>Admin Login</h1>
-      <p>Sign in to manage your NFC review network.</p>
+
+      <p>
+        Sign in to manage your NFC review network.
+      </p>
 
       <input
         id="email"
@@ -386,11 +553,13 @@
       </button>
 
       <p id="login-error"></p>
+
     </div>
+
   </div>
 
 
-  <!-- DASHBOARD -->
+  <!-- APP -->
 
   <div id="dashboard">
 
@@ -405,201 +574,783 @@
           Explore the Web
         </div>
 
+
         <div class="nav-label">
           OVERVIEW
         </div>
 
-        <button class="nav-button active">
+
+        <button
+          class="nav-button active"
+          data-section="dashboard-home"
+        >
           Dashboard
         </button>
 
-        <button class="nav-button">
+
+        <button
+          class="nav-button"
+          data-section="businesses-page"
+        >
           Businesses
         </button>
 
-        <button class="nav-button">
+
+        <button
+          class="nav-button"
+          data-section="nfc-page"
+        >
           NFC Cards
         </button>
 
-        <button class="nav-button">
+
+        <button
+          class="nav-button"
+          data-section="feedback-page"
+        >
           Feedback
         </button>
 
-        <button class="nav-button">
+
+        <button
+          class="nav-button"
+          data-section="analytics-page"
+        >
           Analytics
         </button>
+
 
         <div class="nav-label">
           SYSTEM
         </div>
 
-        <button class="nav-button">
+
+        <button
+          class="nav-button"
+          data-section="settings-page"
+        >
           Settings
         </button>
 
+
         <div class="sidebar-bottom">
+
           <button id="logout-button">
             Log out
           </button>
+
         </div>
 
       </aside>
 
 
-      <!-- MAIN -->
+      <!-- MAIN CONTENT -->
 
       <main class="main-content">
 
-        <header class="page-header">
 
-          <div>
-            <h1>Dashboard</h1>
-            <p>
-              Manage businesses, NFC cards, feedback and performance.
-            </p>
-          </div>
+        <!-- DASHBOARD HOME -->
 
-          <button id="add-customer-button">
-            + New Customer
-          </button>
+        <section
+          id="dashboard-home"
+          class="content-section active"
+        >
 
-        </header>
+          <header class="page-header">
 
+            <div>
 
-        <!-- STATS -->
+              <h1>Dashboard</h1>
 
-        <section class="stats-grid">
+              <p>
+                Manage businesses, NFC cards, feedback and performance.
+              </p>
 
-          <div class="stat-card">
-            <div class="stat-label">
-              Total Businesses
             </div>
 
-            <div
-              class="stat-number"
-              id="stat-businesses"
+            <button
+              id="add-customer-button"
+              class="primary-button"
             >
-              —
-            </div>
-          </div>
+              + New Customer
+            </button>
+
+          </header>
 
 
-          <div class="stat-card">
-            <div class="stat-label">
-              Active NFC Cards
-            </div>
-
-            <div
-              class="stat-number"
-              id="stat-active-cards"
-            >
-              —
-            </div>
-          </div>
+          <section class="stats-grid">
 
 
-          <div class="stat-card">
-            <div class="stat-label">
-              Total Taps
-            </div>
+            <div class="stat-card">
 
-            <div
-              class="stat-number"
-              id="stat-taps"
-            >
-              —
-            </div>
-          </div>
+              <div class="stat-label">
+                Total Businesses
+              </div>
 
+              <div
+                class="stat-number"
+                id="stat-businesses"
+              >
+                —
+              </div>
 
-          <div class="stat-card">
-            <div class="stat-label">
-              Google Review Clicks
             </div>
 
-            <div
-              class="stat-number"
-              id="stat-google-clicks"
-            >
-              —
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                Active NFC Cards
+              </div>
+
+              <div
+                class="stat-number"
+                id="stat-active-cards"
+              >
+                —
+              </div>
+
             </div>
-          </div>
 
 
-          <div class="stat-card">
-            <div class="stat-label">
-              Private Feedback
+            <div class="stat-card">
+
+              <div class="stat-label">
+                Total Taps
+              </div>
+
+              <div
+                class="stat-number"
+                id="stat-taps"
+              >
+                —
+              </div>
+
             </div>
 
-            <div
-              class="stat-number"
-              id="stat-feedback"
-            >
-              —
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                Google Review Clicks
+              </div>
+
+              <div
+                class="stat-number"
+                id="stat-google-clicks"
+              >
+                —
+              </div>
+
             </div>
-          </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                Private Feedback
+              </div>
+
+              <div
+                class="stat-number"
+                id="stat-feedback"
+              >
+                —
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <section class="panel">
+
+            <div class="panel-header">
+
+              <div>
+
+                <h2>Quick Overview</h2>
+
+                <p class="panel-subtitle">
+                  Your NFC review network at a glance.
+                </p>
+
+              </div>
+
+              <button
+                class="secondary-button"
+                data-go-section="businesses-page"
+              >
+                View businesses
+              </button>
+
+            </div>
+
+
+            <div class="empty-state">
+
+              <div class="empty-icon">
+                📊
+              </div>
+
+              <h3>
+                Dashboard analytics are being built
+              </h3>
+
+              <p>
+                Soon this area will show recent activity,
+                taps, feedback and review performance.
+              </p>
+
+            </div>
+
+          </section>
 
         </section>
 
 
         <!-- BUSINESSES -->
 
-        <section class="panel">
+        <section
+          id="businesses-page"
+          class="content-section"
+        >
 
-          <div class="panel-header">
+          <header class="page-header">
 
-            <h2>Businesses</h2>
+            <div>
 
-            <div class="business-toolbar">
+              <h1>Businesses</h1>
 
-              <input
-                id="business-search"
-                type="search"
-                placeholder="Search name, code or email..."
-              >
-
-              <select id="business-status-filter">
-                <option value="all">
-                  All statuses
-                </option>
-
-                <option value="active">
-                  Active
-                </option>
-
-                <option value="inactive">
-                  Inactive
-                </option>
-              </select>
-
-              <select id="business-sort">
-                <option value="newest">
-                  Newest first
-                </option>
-
-                <option value="oldest">
-                  Oldest first
-                </option>
-
-                <option value="name">
-                  Name A–Z
-                </option>
-              </select>
+              <p>
+                Search and manage every customer in your NFC network.
+              </p>
 
             </div>
 
-          </div>
+            <button
+              class="primary-button"
+              data-go-section="new-customer-page"
+            >
+              + New Customer
+            </button>
+
+          </header>
 
 
-          <div id="businesses">
-            <p>Loading businesses...</p>
-          </div>
+          <section class="panel">
+
+            <div class="panel-header">
+
+              <div>
+
+                <h2>
+                  All Businesses
+                </h2>
+
+                <p class="panel-subtitle">
+                  Find businesses by name, code or owner email.
+                </p>
+
+              </div>
+
+
+              <div class="business-toolbar">
+
+                <input
+                  id="business-search"
+                  type="search"
+                  placeholder="Search name, code or email..."
+                >
+
+
+                <select id="business-status-filter">
+
+                  <option value="all">
+                    All statuses
+                  </option>
+
+                  <option value="active">
+                    Active
+                  </option>
+
+                  <option value="inactive">
+                    Inactive
+                  </option>
+
+                </select>
+
+
+                <select id="business-sort">
+
+                  <option value="newest">
+                    Newest first
+                  </option>
+
+                  <option value="oldest">
+                    Oldest first
+                  </option>
+
+                  <option value="name">
+                    Name A–Z
+                  </option>
+
+                </select>
+
+              </div>
+
+            </div>
+
+
+            <div id="businesses">
+              <p>Loading businesses...</p>
+            </div>
+
+          </section>
+
+        </section>
+
+
+        <!-- NEW CUSTOMER -->
+
+        <section
+          id="new-customer-page"
+          class="content-section"
+        >
+
+          <header class="page-header">
+
+            <div>
+
+              <h1>New Customer</h1>
+
+              <p>
+                Set up a new business and prepare their NFC review card.
+              </p>
+
+            </div>
+
+            <button
+              class="secondary-button"
+              data-go-section="businesses-page"
+            >
+              Back to businesses
+            </button>
+
+          </header>
+
+
+          <section class="panel">
+
+            <div class="info-banner">
+              The setup wizard interface is ready.
+              In the next step we will connect this form to Supabase
+              so it can actually create businesses and NFC cards.
+            </div>
+
+
+            <div class="form-grid">
+
+
+              <div class="form-group">
+
+                <label for="wizard-business-name">
+                  Business Name
+                </label>
+
+                <input
+                  id="wizard-business-name"
+                  type="text"
+                  placeholder="e.g. Knightsbridge Car Wash"
+                >
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label for="wizard-owner-email">
+                  Owner Email
+                </label>
+
+                <input
+                  id="wizard-owner-email"
+                  type="email"
+                  placeholder="owner@example.com"
+                >
+
+              </div>
+
+
+              <div class="form-group full-width">
+
+                <label for="wizard-google-url">
+                  Google Review Link
+                </label>
+
+                <input
+                  id="wizard-google-url"
+                  type="url"
+                  placeholder="https://..."
+                >
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label for="wizard-business-code">
+                  Business Code
+                </label>
+
+                <input
+                  id="wizard-business-code"
+                  type="text"
+                  placeholder="e.g. KCV001"
+                >
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label for="wizard-card-count">
+                  Number of NFC Cards
+                </label>
+
+                <select id="wizard-card-count">
+
+                  <option value="1">
+                    1 card
+                  </option>
+
+                  <option value="2">
+                    2 cards
+                  </option>
+
+                  <option value="3">
+                    3 cards
+                  </option>
+
+                  <option value="5">
+                    5 cards
+                  </option>
+
+                  <option value="10">
+                    10 cards
+                  </option>
+
+                </select>
+
+              </div>
+
+            </div>
+
+
+            <div class="form-actions">
+
+              <button
+                id="wizard-create-button"
+                class="primary-button"
+                type="button"
+              >
+                Create Customer
+              </button>
+
+              <button
+                class="secondary-button"
+                type="button"
+                data-go-section="businesses-page"
+              >
+                Cancel
+              </button>
+
+            </div>
+
+          </section>
+
+        </section>
+
+
+        <!-- NFC CARDS -->
+
+        <section
+          id="nfc-page"
+          class="content-section"
+        >
+
+          <header class="page-header">
+
+            <div>
+
+              <h1>NFC Cards</h1>
+
+              <p>
+                Manage every programmed NFC card in your network.
+              </p>
+
+            </div>
+
+          </header>
+
+
+          <section class="panel">
+
+            <div class="empty-state">
+
+              <div class="empty-icon">
+                📡
+              </div>
+
+              <h3>
+                NFC Card Manager
+              </h3>
+
+              <p>
+                This page will show card codes,
+                linked businesses, active status,
+                replacement cards and card activity.
+              </p>
+
+            </div>
+
+          </section>
+
+        </section>
+
+
+        <!-- FEEDBACK -->
+
+        <section
+          id="feedback-page"
+          class="content-section"
+        >
+
+          <header class="page-header">
+
+            <div>
+
+              <h1>Feedback</h1>
+
+              <p>
+                View private customer feedback across all businesses.
+              </p>
+
+            </div>
+
+          </header>
+
+
+          <section class="panel">
+
+            <div class="empty-state">
+
+              <div class="empty-icon">
+                💬
+              </div>
+
+              <h3>
+                Feedback Inbox
+              </h3>
+
+              <p>
+                This page will show private feedback,
+                ratings, business names,
+                read/unread status and filters.
+              </p>
+
+            </div>
+
+          </section>
+
+        </section>
+
+
+        <!-- ANALYTICS -->
+
+        <section
+          id="analytics-page"
+          class="content-section"
+        >
+
+          <header class="page-header">
+
+            <div>
+
+              <h1>Analytics</h1>
+
+              <p>
+                Understand taps, reviews and feedback performance.
+              </p>
+
+            </div>
+
+          </header>
+
+
+          <section class="stats-grid">
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                NFC Taps
+              </div>
+
+              <div class="stat-number">
+                —
+              </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                Google Redirects
+              </div>
+
+              <div class="stat-number">
+                —
+              </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                Private Feedback
+              </div>
+
+              <div class="stat-number">
+                —
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <section class="panel">
+
+            <div class="empty-state">
+
+              <div class="empty-icon">
+                📈
+              </div>
+
+              <h3>
+                Performance Charts
+              </h3>
+
+              <p>
+                We'll add 7-day and 30-day graphs,
+                review redirects,
+                feedback trends and per-business analytics here.
+              </p>
+
+            </div>
+
+          </section>
+
+        </section>
+
+
+        <!-- SETTINGS -->
+
+        <section
+          id="settings-page"
+          class="content-section"
+        >
+
+          <header class="page-header">
+
+            <div>
+
+              <h1>Settings</h1>
+
+              <p>
+                Manage your admin system and platform configuration.
+              </p>
+
+            </div>
+
+          </header>
+
+
+          <section class="panel">
+
+
+            <div class="settings-row">
+
+              <div>
+
+                <h3>
+                  Admin Account
+                </h3>
+
+                <p>
+                  Your dashboard is protected with Supabase Authentication.
+                </p>
+
+              </div>
+
+              <span>
+                Active
+              </span>
+
+            </div>
+
+
+            <div class="settings-row">
+
+              <div>
+
+                <h3>
+                  Review Domain
+                </h3>
+
+                <p>
+                  reviewcard.uk will be connected after the Cloudflare transfer.
+                </p>
+
+              </div>
+
+              <span>
+                Pending
+              </span>
+
+            </div>
+
+
+            <div class="settings-row">
+
+              <div>
+
+                <h3>
+                  Feedback Email
+                </h3>
+
+                <p>
+                  Resend production email will be enabled after domain verification.
+                </p>
+
+              </div>
+
+              <span>
+                Pending
+              </span>
+
+            </div>
+
+
+          </section>
 
         </section>
 
 
         <p class="coming-soon">
-          Feedback inbox • NFC management • Analytics • Customer setup wizard
+          Explore the Web • NFC Review Management System
         </p>
 
       </main>
@@ -611,9 +1362,171 @@
 
   <script src="config.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
 
   <script src="admin.js"></script>
+
+
+  <!-- SIDEBAR NAVIGATION -->
+
+  <script>
+
+    const navButtons =
+      document.querySelectorAll(
+        ".nav-button[data-section]"
+      );
+
+    const contentSections =
+      document.querySelectorAll(
+        ".content-section"
+      );
+
+
+    function openAdminSection(sectionId) {
+
+      contentSections.forEach(
+        (section) => {
+
+          section.classList.remove(
+            "active"
+          );
+
+        }
+      );
+
+
+      const selectedSection =
+        document.getElementById(
+          sectionId
+        );
+
+
+      if (selectedSection) {
+
+        selectedSection.classList.add(
+          "active"
+        );
+
+      }
+
+
+      navButtons.forEach(
+        (button) => {
+
+          button.classList.remove(
+            "active"
+          );
+
+
+          if (
+            button.dataset.section ===
+            sectionId
+          ) {
+
+            button.classList.add(
+              "active"
+            );
+
+          }
+
+        }
+      );
+
+
+      if (
+        sectionId ===
+        "new-customer-page"
+      ) {
+
+        const businessesButton =
+          document.querySelector(
+            '[data-section="businesses-page"]'
+          );
+
+
+        if (businessesButton) {
+
+          businessesButton.classList.add(
+            "active"
+          );
+
+        }
+
+      }
+
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+
+    }
+
+
+    navButtons.forEach(
+      (button) => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            openAdminSection(
+              button.dataset.section
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+    document
+      .querySelectorAll(
+        "[data-go-section]"
+      )
+      .forEach(
+        (button) => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              openAdminSection(
+                button.dataset.goSection
+              );
+
+            }
+          );
+
+        }
+      );
+
+
+    const addCustomerButton =
+      document.getElementById(
+        "add-customer-button"
+      );
+
+
+    if (addCustomerButton) {
+
+      addCustomerButton.addEventListener(
+        "click",
+        () => {
+
+          openAdminSection(
+            "new-customer-page"
+          );
+
+        }
+      );
+
+    }
+
+  </script>
 
 </body>
 </html>
