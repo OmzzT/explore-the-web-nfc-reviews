@@ -1,5 +1,13 @@
-const supabaseUrl = window.APP_CONFIG?.SUPABASE_URL;
-const supabaseKey = window.APP_CONFIG?.SUPABASE_PUBLISHABLE_KEY;
+const supabaseUrl =
+  window.APP_CONFIG?.SUPABASE_URL;
+
+const supabaseKey =
+  window.APP_CONFIG?.SUPABASE_PUBLISHABLE_KEY;
+
+
+/* =========================
+   PAGE ELEMENTS
+========================= */
 
 const loginSection =
   document.getElementById("login-section");
@@ -34,10 +42,24 @@ const businessStatusFilter =
   );
 
 const businessSort =
-  document.getElementById("business-sort");
+  document.getElementById(
+    "business-sort"
+  );
 
 const statBusinesses =
-  document.getElementById("stat-businesses");
+  document.getElementById(
+    "stat-businesses"
+  );
+
+const statActiveCards =
+  document.getElementById(
+    "stat-active-cards"
+  );
+
+
+/* =========================
+   NEW CUSTOMER ELEMENTS
+========================= */
 
 const wizardBusinessName =
   document.getElementById(
@@ -70,8 +92,20 @@ const wizardCreateButton =
   );
 
 
+/* =========================
+   DATA
+========================= */
+
 let businessesData = [];
 
+let nfcCardsData = [];
+
+let nfcSearchTerm = "";
+
+
+/* =========================
+   CONFIGURATION
+========================= */
 
 if (!supabaseUrl || !supabaseKey) {
 
@@ -92,6 +126,10 @@ const supabaseClient =
   );
 
 
+/* =========================
+   HELPERS
+========================= */
+
 function escapeHtml(value) {
 
   return String(value ?? "")
@@ -104,26 +142,83 @@ function escapeHtml(value) {
 }
 
 
+function formatDate(value) {
+
+  if (!value) {
+    return "Unknown";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "Unknown";
+  }
+
+  return date.toLocaleString(
+    "en-GB",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
+
+}
+
+
 function showLogin() {
 
-  loginSection.style.display = "flex";
-  dashboard.style.display = "none";
+  loginSection.style.display =
+    "flex";
+
+  dashboard.style.display =
+    "none";
 
 }
 
 
 function clearWizard() {
 
-  wizardBusinessName.value = "";
-  wizardOwnerEmail.value = "";
-  wizardGoogleUrl.value = "";
-  wizardBusinessCode.value = "";
-  wizardCardCount.value = "1";
+  if (wizardBusinessName) {
+    wizardBusinessName.value = "";
+  }
+
+  if (wizardOwnerEmail) {
+    wizardOwnerEmail.value = "";
+  }
+
+  if (wizardGoogleUrl) {
+    wizardGoogleUrl.value = "";
+  }
+
+  if (wizardBusinessCode) {
+    wizardBusinessCode.value = "";
+  }
+
+  if (wizardCardCount) {
+    wizardCardCount.value = "1";
+  }
 
 }
 
 
+/* =========================
+   BUSINESSES
+========================= */
+
 function renderBusinesses() {
+
+  if (!businessesContainer) {
+    return;
+  }
+
 
   const searchTerm =
     businessSearch
@@ -321,6 +416,11 @@ function renderBusinesses() {
 
 async function loadBusinesses() {
 
+  if (!businessesContainer) {
+    return;
+  }
+
+
   businessesContainer.innerHTML =
     "<p>Loading businesses...</p>";
 
@@ -366,52 +466,517 @@ async function loadBusinesses() {
 }
 
 
-async function showDashboard() {
+/* =========================
+   NFC CARD MANAGER
+========================= */
 
-  loginSection.style.display = "none";
-  dashboard.style.display = "block";
+function getNfcPanel() {
 
-  await loadBusinesses();
+  const nfcPage =
+    document.getElementById(
+      "nfc-page"
+    );
+
+  if (!nfcPage) {
+    return null;
+  }
+
+  return nfcPage.querySelector(
+    ".panel"
+  );
 
 }
 
 
-async function checkLogin() {
+function renderNfcCards() {
 
-  const {
-    data: { session }
-  } =
-    await supabaseClient.auth
-      .getSession();
+  const panel =
+    getNfcPanel();
 
 
-  if (session) {
+  if (!panel) {
+    return;
+  }
 
-    await showDashboard();
 
-  } else {
+  const filteredCards =
+    nfcCardsData.filter(
+      (card) => {
 
-    showLogin();
+        const searchableText = [
+          card.card_code,
+          card.business_name,
+          card.label
+        ]
+          .join(" ")
+          .toLowerCase();
+
+
+        return searchableText.includes(
+          nfcSearchTerm
+        );
+
+      }
+    );
+
+
+  const cardRows =
+    filteredCards
+      .map(
+        (card) => {
+
+          const cardCode =
+            escapeHtml(
+              card.card_code
+            );
+
+          const businessName =
+            escapeHtml(
+              card.business_name
+            );
+
+          const label =
+            escapeHtml(
+              card.label || "NFC Card"
+            );
+
+          const createdAt =
+            escapeHtml(
+              formatDate(
+                card.created_at
+              )
+            );
+
+          const cardUrl =
+            `${window.location.origin}/?card=${encodeURIComponent(
+              card.card_code
+            )}`;
+
+
+          return `
+            <div style="
+              border:1px solid #e5e7eb;
+              border-radius:14px;
+              padding:18px;
+              background:#fff;
+              display:grid;
+              grid-template-columns:
+                minmax(160px,1fr)
+                minmax(180px,1.4fr)
+                minmax(100px,.7fr)
+                auto;
+              gap:18px;
+              align-items:center;
+            ">
+
+              <div>
+
+                <div style="
+                  font-size:12px;
+                  color:#6b7280;
+                  margin-bottom:5px;
+                ">
+                  CARD CODE
+                </div>
+
+                <strong style="
+                  font-size:17px;
+                ">
+                  ${cardCode}
+                </strong>
+
+                <div style="
+                  color:#6b7280;
+                  font-size:13px;
+                  margin-top:5px;
+                ">
+                  ${label}
+                </div>
+
+              </div>
+
+
+              <div>
+
+                <div style="
+                  font-size:12px;
+                  color:#6b7280;
+                  margin-bottom:5px;
+                ">
+                  BUSINESS
+                </div>
+
+                <strong>
+                  ${businessName}
+                </strong>
+
+                <div style="
+                  color:#6b7280;
+                  font-size:13px;
+                  margin-top:5px;
+                ">
+                  Created ${createdAt}
+                </div>
+
+              </div>
+
+
+              <div>
+
+                <div style="
+                  font-size:12px;
+                  color:#6b7280;
+                  margin-bottom:5px;
+                ">
+                  STATUS
+                </div>
+
+                <span style="
+                  display:inline-block;
+                  padding:6px 10px;
+                  border-radius:999px;
+                  background:${
+                    card.is_active
+                      ? "#dcfce7"
+                      : "#f3f4f6"
+                  };
+                  color:${
+                    card.is_active
+                      ? "#166534"
+                      : "#6b7280"
+                  };
+                  font-size:12px;
+                  font-weight:700;
+                ">
+                  ${
+                    card.is_active
+                      ? "ACTIVE"
+                      : "INACTIVE"
+                  }
+                </span>
+
+              </div>
+
+
+              <div style="
+                display:flex;
+                gap:8px;
+                flex-wrap:wrap;
+                justify-content:flex-end;
+              ">
+
+                <a
+                  href="${cardUrl}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style="
+                    display:inline-block;
+                    padding:9px 12px;
+                    border-radius:9px;
+                    background:#111827;
+                    color:white;
+                    text-decoration:none;
+                    font-size:13px;
+                    font-weight:700;
+                  "
+                >
+                  Open Card
+                </a>
+
+                <button
+                  type="button"
+                  class="copy-card-link"
+                  data-url="${escapeHtml(
+                    cardUrl
+                  )}"
+                  style="
+                    border:1px solid #d1d5db;
+                    background:white;
+                    padding:9px 12px;
+                    border-radius:9px;
+                    font-size:13px;
+                    font-weight:700;
+                  "
+                >
+                  Copy URL
+                </button>
+
+              </div>
+
+            </div>
+          `;
+
+        }
+      )
+      .join("");
+
+
+  panel.innerHTML = `
+
+    <div
+      style="
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:16px;
+        flex-wrap:wrap;
+        margin-bottom:18px;
+      "
+    >
+
+      <div>
+
+        <h2 style="
+          margin:0 0 5px;
+          font-size:20px;
+        ">
+          All NFC Cards
+        </h2>
+
+        <p style="
+          margin:0;
+          color:#6b7280;
+          font-size:14px;
+        ">
+          ${nfcCardsData.length}
+          card${
+            nfcCardsData.length === 1
+              ? ""
+              : "s"
+          }
+          in your network
+        </p>
+
+      </div>
+
+
+      <input
+        id="nfc-card-search"
+        type="search"
+        value="${escapeHtml(
+          nfcSearchTerm
+        )}"
+        placeholder="Search card or business..."
+        style="
+          min-width:280px;
+          padding:11px 13px;
+          border:1px solid #d1d5db;
+          border-radius:10px;
+          outline:none;
+        "
+      >
+
+    </div>
+
+
+    <div
+      id="nfc-card-list"
+      style="
+        display:grid;
+        gap:12px;
+      "
+    >
+
+      ${
+        filteredCards.length
+          ? cardRows
+          : `
+            <div style="
+              padding:40px 20px;
+              text-align:center;
+              color:#6b7280;
+              border:1px dashed #d1d5db;
+              border-radius:14px;
+            ">
+              No NFC cards match your search.
+            </div>
+          `
+      }
+
+    </div>
+  `;
+
+
+  const searchInput =
+    document.getElementById(
+      "nfc-card-search"
+    );
+
+
+  if (searchInput) {
+
+    searchInput.addEventListener(
+      "input",
+      (event) => {
+
+        nfcSearchTerm =
+          event.target.value
+            .trim()
+            .toLowerCase();
+
+        renderNfcCards();
+
+        const nextSearch =
+          document.getElementById(
+            "nfc-card-search"
+          );
+
+        if (nextSearch) {
+
+          nextSearch.focus();
+
+          nextSearch.setSelectionRange(
+            nextSearch.value.length,
+            nextSearch.value.length
+          );
+
+        }
+
+      }
+    );
 
   }
 
+
+  document
+    .querySelectorAll(
+      ".copy-card-link"
+    )
+    .forEach(
+      (button) => {
+
+        button.addEventListener(
+          "click",
+          async () => {
+
+            const url =
+              button.dataset.url;
+
+
+            try {
+
+              await navigator.clipboard
+                .writeText(url);
+
+              const oldText =
+                button.textContent;
+
+              button.textContent =
+                "Copied ✓";
+
+              setTimeout(
+                () => {
+
+                  button.textContent =
+                    oldText;
+
+                },
+                1500
+              );
+
+            } catch {
+
+              window.prompt(
+                "Copy this NFC URL:",
+                url
+              );
+
+            }
+
+          }
+        );
+
+      }
+    );
+
 }
 
 
-/* ---------------------------
-   CREATE NEW CUSTOMER
----------------------------- */
+async function loadNfcCards() {
+
+  const panel =
+    getNfcPanel();
+
+
+  if (!panel) {
+    return;
+  }
+
+
+  panel.innerHTML = `
+    <p>
+      Loading NFC cards...
+    </p>
+  `;
+
+
+  const { data, error } =
+    await supabaseClient.rpc(
+      "get_admin_nfc_cards"
+    );
+
+
+  if (error) {
+
+    panel.innerHTML = `
+      <p>
+        Could not load NFC cards.
+      </p>
+    `;
+
+    console.error(
+      "NFC card loading error:",
+      error
+    );
+
+    return;
+
+  }
+
+
+  nfcCardsData =
+    data || [];
+
+
+  if (statActiveCards) {
+
+    const activeCards =
+      nfcCardsData.filter(
+        (card) =>
+          card.is_active === true
+      ).length;
+
+    statActiveCards.textContent =
+      activeCards;
+
+  }
+
+
+  renderNfcCards();
+
+}
+
+
+/* =========================
+   CREATE CUSTOMER
+========================= */
 
 async function createCustomer() {
 
   const businessName =
-    wizardBusinessName.value.trim();
+    wizardBusinessName
+      .value
+      .trim();
 
   const ownerEmail =
-    wizardOwnerEmail.value.trim();
+    wizardOwnerEmail
+      .value
+      .trim();
 
   const googleReviewUrl =
-    wizardGoogleUrl.value.trim();
+    wizardGoogleUrl
+      .value
+      .trim();
 
   const businessCode =
     wizardBusinessCode
@@ -443,7 +1008,9 @@ async function createCustomer() {
 
   try {
 
-    new URL(googleReviewUrl);
+    new URL(
+      googleReviewUrl
+    );
 
   } catch {
 
@@ -456,7 +1023,8 @@ async function createCustomer() {
   }
 
 
-  wizardCreateButton.disabled = true;
+  wizardCreateButton.disabled =
+    true;
 
   wizardCreateButton.textContent =
     "Creating customer...";
@@ -484,7 +1052,8 @@ async function createCustomer() {
     );
 
 
-  wizardCreateButton.disabled = false;
+  wizardCreateButton.disabled =
+    false;
 
   wizardCreateButton.textContent =
     "Create Customer";
@@ -565,6 +1134,8 @@ async function createCustomer() {
 
   await loadBusinesses();
 
+  await loadNfcCards();
+
 
   if (
     typeof window.openAdminSection ===
@@ -580,9 +1151,56 @@ async function createCustomer() {
 }
 
 
-/* ---------------------------
-   SEARCH / FILTER / SORT
----------------------------- */
+/* =========================
+   DASHBOARD
+========================= */
+
+async function showDashboard() {
+
+  loginSection.style.display =
+    "none";
+
+  dashboard.style.display =
+    "block";
+
+
+  await Promise.all([
+    loadBusinesses(),
+    loadNfcCards()
+  ]);
+
+}
+
+
+/* =========================
+   LOGIN CHECK
+========================= */
+
+async function checkLogin() {
+
+  const {
+    data: { session }
+  } =
+    await supabaseClient.auth
+      .getSession();
+
+
+  if (session) {
+
+    await showDashboard();
+
+  } else {
+
+    showLogin();
+
+  }
+
+}
+
+
+/* =========================
+   BUSINESS CONTROLS
+========================= */
 
 if (businessSearch) {
 
@@ -614,9 +1232,34 @@ if (businessSort) {
 }
 
 
-/* ---------------------------
+/* =========================
+   NFC NAVIGATION
+========================= */
+
+const nfcNavigationButton =
+  document.querySelector(
+    '[data-section="nfc-page"]'
+  );
+
+
+if (nfcNavigationButton) {
+
+  nfcNavigationButton
+    .addEventListener(
+      "click",
+      async () => {
+
+        await loadNfcCards();
+
+      }
+    );
+
+}
+
+
+/* =========================
    CREATE CUSTOMER BUTTON
----------------------------- */
+========================= */
 
 if (wizardCreateButton) {
 
@@ -628,9 +1271,9 @@ if (wizardCreateButton) {
 }
 
 
-/* ---------------------------
+/* =========================
    LOGIN
----------------------------- */
+========================= */
 
 loginButton.addEventListener(
   "click",
@@ -656,7 +1299,8 @@ loginButton.addEventListener(
     }
 
 
-    loginButton.disabled = true;
+    loginButton.disabled =
+      true;
 
     loginButton.textContent =
       "Logging in...";
@@ -670,7 +1314,8 @@ loginButton.addEventListener(
         });
 
 
-    loginButton.disabled = false;
+    loginButton.disabled =
+      false;
 
     loginButton.textContent =
       "Log in";
@@ -695,9 +1340,9 @@ loginButton.addEventListener(
 );
 
 
-/* ---------------------------
+/* =========================
    LOGOUT
----------------------------- */
+========================= */
 
 logoutButton.addEventListener(
   "click",
@@ -712,9 +1357,9 @@ logoutButton.addEventListener(
 );
 
 
-/* ---------------------------
+/* =========================
    AUTH CHANGES
----------------------------- */
+========================= */
 
 supabaseClient.auth
   .onAuthStateChange(
