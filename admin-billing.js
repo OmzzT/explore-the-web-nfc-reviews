@@ -82,3 +82,4 @@
   // Businesses may already have loaded before this script executes.
   if (businessesData.length) renderBusinesses();
 })();
+
