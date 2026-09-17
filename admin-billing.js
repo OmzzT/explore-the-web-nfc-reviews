@@ -1,80 +1,82 @@
-/* Business billing indicators. Loaded after admin.js. */
+/* Business billing indicators. Loaded after the admin page script. */
 (() => {
   const container = document.getElementById('businesses');
-  if (!container || typeof renderBusinesses !== 'function') return;
+  const config = window.APP_CONFIG;
+  if (!container || !config?.SUPABASE_URL || !config?.SUPABASE_PUBLISHABLE_KEY || !window.supabase) return;
 
-  const originalRender = renderBusinesses;
-  const pill = (label, tone) => {
-    const palette = {
-      green: ['#dcfce7', '#166534'],
-      amber: ['#fef3c7', '#92400e'],
-      red: ['#fee2e2', '#991b1b'],
-      grey: ['#f3f4f6', '#374151']
-    };
-    const [background, color] = palette[tone];
-    const span = document.createElement('span');
-    span.textContent = label;
-    Object.assign(span.style, {
-      display: 'inline-block', padding: '4px 9px', borderRadius: '999px',
-      background, color, fontSize: '12px', fontWeight: '700'
+  const client = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_PUBLISHABLE_KEY);
+  let businesses = [];
+
+  const formatBillingDate = (value) => {
+    const date = new Date(value);
+    if (!value || Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
-    return span;
   };
 
-  renderBusinesses = function () {
-    originalRender();
-    const cards = Array.from(container.children).filter(el => el.tagName === 'DIV');
-    const search = document.getElementById('business-search')?.value.trim().toLowerCase() || '';
-    const status = document.getElementById('business-status-filter')?.value || 'all';
-    const sort = document.getElementById('business-sort')?.value || 'newest';
-    let shown = businessesData.filter(b => {
-      const text = [b.business_name, b.business_code, b.owner_email].join(' ').toLowerCase();
-      return text.includes(search) && (status === 'all' || (status === 'active' ? b.is_active === true : b.is_active === false));
-    });
-    shown = [...shown].sort((a, b) => sort === 'oldest'
-      ? new Date(a.created_at) - new Date(b.created_at)
-      : sort === 'name' ? String(a.business_name).localeCompare(String(b.business_name))
-      : new Date(b.created_at) - new Date(a.created_at));
+  const pill = (label, tone) => {
+    const palette = {
+      green: ['#dcfce7', '#166534'], amber: ['#fef3c7', '#92400e'],
+      red: ['#fee2e2', '#991b1b'], grey: ['#f3f4f6', '#374151']
+    };
+    const [background, color] = palette[tone] || palette.grey;
+    return `<span style="display:inline-block;padding:4px 9px;border-radius:999px;background:${background};color:${color};font-size:12px;font-weight:700;">${label}</span>`;
+  };
 
-    cards.forEach((card, index) => {
-      const business = shown[index];
+  const addIndicators = () => {
+    const cards = Array.from(container.children).filter(el => el.tagName === 'DIV');
+    cards.forEach(card => {
+      card.querySelector('.billing-indicators')?.remove();
+      const codeParagraph = Array.from(card.querySelectorAll('p')).find(p => p.querySelector('strong')?.textContent.trim() === 'Business code:');
+      if (!codeParagraph) return;
+      const code = codeParagraph.textContent.replace('Business code:', '').trim();
+      const business = businesses.find(b => String(b.business_code) === code);
       if (!business) return;
+
       const billing = business.billing_status || 'not_configured';
       const graceTime = business.grace_until ? new Date(business.grace_until).getTime() : NaN;
       const inGrace = billing === 'past_due' && Number.isFinite(graceTime) && graceTime > Date.now();
-      const unavailable = !business.is_active || billing === 'suspended' || (billing === 'past_due' && !inGrace);
-      const billingLabels = {
+      const unavailable = business.is_active === false || billing === 'suspended' || (billing === 'past_due' && !inGrace);
+      const labels = {
         active: ['Active', 'green'], past_due: ['Past due', 'amber'],
         suspended: ['Suspended', 'red'], not_configured: ['Not configured', 'grey']
       };
-      const [billingLabel, billingTone] = billingLabels[billing] || [billing.replaceAll('_', ' '), 'grey'];
+      const [billingLabel, billingTone] = labels[billing] || [String(billing).replaceAll('_', ' '), 'grey'];
+      const nfcLabel = unavailable ? ['Unavailable', 'red'] : inGrace ? ['Grace period', 'amber'] : ['Available', 'green'];
+
       const details = document.createElement('div');
+      details.className = 'billing-indicators';
       details.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:12px 0;font-size:13px;';
-      const addStatus = (label, badge) => {
-        const group = document.createElement('span');
-        group.style.cssText = 'display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;';
-        const heading = document.createElement('strong');
-        heading.textContent = label + ':';
-        group.append(heading, badge);
-        details.append(group);
-      };
-      addStatus('Billing', pill(billingLabel, billingTone));
-      addStatus('NFC access', unavailable ? pill('Unavailable', 'red') : inGrace ? pill('Grace period', 'amber') : pill('Available', 'green'));
-      const addDate = (label, value) => {
-        if (!value || Number.isNaN(new Date(value).getTime())) return;
+      details.innerHTML = `<span><strong>Billing:</strong> ${pill(billingLabel, billingTone)}</span><span><strong>NFC access:</strong> ${pill(nfcLabel[0], nfcLabel[1])}</span>`;
+
+      if (inGrace) {
         const item = document.createElement('span');
-        const heading = document.createElement('strong');
-        heading.textContent = label + ': ';
-        item.append(heading, document.createTextNode(formatDate(value)));
+        item.innerHTML = `<strong>Grace ends:</strong> ${formatBillingDate(business.grace_until)}`;
         details.append(item);
-      };
-      if (inGrace) addDate('Grace ends', business.grace_until);
-      addDate('Last payment', business.last_payment_at);
+      }
+      if (business.last_payment_at) {
+        const item = document.createElement('span');
+        item.innerHTML = `<strong>Last payment:</strong> ${formatBillingDate(business.last_payment_at)}`;
+        details.append(item);
+      }
+
       const statusParagraph = Array.from(card.querySelectorAll('p')).find(p => p.querySelector('strong')?.textContent.trim() === 'Status:');
       if (statusParagraph) statusParagraph.after(details);
       else card.append(details);
     });
   };
 
-  renderBusinesses();
+  const observer = new MutationObserver(() => addIndicators());
+  observer.observe(container, { childList: true });
+
+  (async () => {
+    const { data, error } = await client.rpc('get_admin_businesses');
+    if (error) {
+      console.error('Billing indicator loading error:', error);
+      return;
+    }
+    businesses = data || [];
+    addIndicators();
+  })();
 })();
