@@ -1,9 +1,12 @@
-/* Extend the existing authenticated Businesses renderer; do not create a second Supabase client. */
+/* Extend the authenticated Businesses renderer without creating a second Supabase client. */
 (() => {
   const container = document.getElementById('businesses');
   if (!container || typeof renderBusinesses !== 'function') return;
 
   const originalRender = renderBusinesses;
+  const pending = new Set();
+  const checkoutEndpoint = `${supabaseUrl}/functions/v1/create-subscription-checkout`;
+
   const formatBillingDate = (value) => {
     if (!value) return '';
     const date = new Date(value);
@@ -76,10 +79,91 @@
         p.querySelector('strong')?.textContent.trim() === 'Status:');
       if (statusParagraph) statusParagraph.after(details);
       else card.append(details);
+
+      // A business with an existing subscription must not receive another checkout.
+      if (billing !== 'not_configured' || business.stripe_subscription_id || !business.owner_email) return;
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0;';
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'send-subscription-checkout';
+      button.dataset.businessId = business.id;
+      button.textContent = pending.has(business.id) ? 'Sending…' : 'Send payment link';
+      button.disabled = pending.has(business.id);
+      button.style.cssText = 'border:1px solid #111827;border-radius:9px;background:#111827;color:#fff;padding:9px 12px;font-size:13px;font-weight:700;cursor:pointer;';
+      const result = document.createElement('span');
+      result.className = 'checkout-result';
+      result.setAttribute('role', 'status');
+      result.style.cssText = 'font-size:13px;overflow-wrap:anywhere;';
+      actions.append(button, result);
+      const reviewLink = Array.from(card.querySelectorAll('a')).find(a => a.textContent.includes('Open Google review link'));
+      if (reviewLink?.closest('p')) reviewLink.closest('p').before(actions);
+      else card.append(actions);
     });
   };
+
+  container.addEventListener('click', async (event) => {
+    const button = event.target.closest('button.send-subscription-checkout');
+    if (!button || !container.contains(button)) return;
+    const business = businessesData.find(item => item.id === button.dataset.businessId);
+    if (!business || pending.has(business.id)) return;
+    if ((business.billing_status || 'not_configured') !== 'not_configured' || business.stripe_subscription_id) {
+      window.alert('This business already has subscription information. Refresh and check its billing status.');
+      return;
+    }
+    if (!window.confirm(`Send a Stripe sandbox subscription checkout for £14.99/month to ${business.owner_email} (${business.business_name})?\n\nOnly continue if this is a test recipient.`)) return;
+
+    const result = button.parentElement.querySelector('.checkout-result');
+    pending.add(business.id);
+    button.disabled = true;
+    button.textContent = 'Sending…';
+    result.textContent = '';
+    try {
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+      if (sessionError || !session?.access_token) throw new Error('Please sign in again.');
+      const response = await fetch(checkoutEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseKey,
+          Authorization: `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ business_id: business.id })
+      });
+      const data = await response.json();
+      if (!response.ok || data.error) throw new Error(data.error || 'Could not create checkout.');
+      result.textContent = data.email_sent
+        ? 'Checkout email submitted to Resend (delivery not yet confirmed). '
+        : 'Email could not be sent. Copy the checkout link instead. ';
+      if (data.checkout_url) {
+        const copy = document.createElement('button');
+        copy.type = 'button';
+        copy.textContent = 'Copy checkout link';
+        copy.style.cssText = 'border:1px solid #d1d5db;border-radius:8px;background:#fff;padding:6px 9px;cursor:pointer;';
+        copy.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(data.checkout_url);
+            copy.textContent = 'Copied ✓';
+          } catch {
+            window.prompt('Copy this Stripe checkout link:', data.checkout_url);
+          }
+        });
+        result.append(copy);
+      }
+      // Keep this button disabled after a successful request to avoid duplicate emails.
+      button.textContent = 'Link created';
+      return;
+    } catch (error) {
+      result.textContent = error instanceof Error ? error.message : 'Could not send the payment link.';
+    } finally {
+      pending.delete(business.id);
+      if (button.textContent !== 'Link created') {
+        button.disabled = false;
+        button.textContent = 'Send payment link';
+      }
+    }
+  });
 
   // Businesses may already have loaded before this script executes.
   if (businessesData.length) renderBusinesses();
 })();
-
