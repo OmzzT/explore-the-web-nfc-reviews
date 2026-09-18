@@ -1459,10 +1459,7 @@ async function createCustomer() {
         const cardCode =
           row.card_code;
 
-        const cardUrl =
-          `${https://reviewcard.uk}/?card=${encodeURIComponent(
-            cardCode
-          )}`;
+        const cardUrl = `https://reviewcard.uk/?card=${encodeURIComponent(cardCode)}`;
 
         return (
           `${cardCode}\n` +
