@@ -373,7 +373,7 @@ function renderNfcCards() {
         );
 
       const cardUrl =
-        `${window.location.origin}/?card=${encodeURIComponent(
+        `${https://reviewcard.uk}/?card=${encodeURIComponent(
           card.card_code
         )}`;
 
@@ -1463,7 +1463,7 @@ async function createCustomer() {
           row.card_code;
 
         const cardUrl =
-          `${window.location.origin}/?card=${encodeURIComponent(
+          `${https://reviewcard.uk}/?card=${encodeURIComponent(
             cardCode
           )}`;
 
