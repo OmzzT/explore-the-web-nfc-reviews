@@ -43,13 +43,14 @@
       const billing = business.billing_status || 'not_configured';
       const graceTime = business.grace_until ? new Date(business.grace_until).getTime() : NaN;
       const inGrace = billing === 'past_due' && Number.isFinite(graceTime) && graceTime > Date.now();
-      const unavailable = business.is_active !== true || billing === 'suspended' || (billing === 'past_due' && !inGrace);
+      // Match public.get_nfc_card: only active billing or an unexpired past-due grace period grants access.
+      const available = business.is_active === true && (billing === 'active' || inGrace);
       const labels = {
         active: ['Active', 'green'], past_due: ['Past due', 'amber'],
         suspended: ['Suspended', 'red'], not_configured: ['Not configured', 'grey']
       };
       const [billingLabel, billingTone] = labels[billing] || [String(billing).replaceAll('_', ' '), 'grey'];
-      const [accessLabel, accessTone] = unavailable ? ['Unavailable', 'red'] :
+      const [accessLabel, accessTone] = !available ? ['Unavailable', 'red'] :
         inGrace ? ['Grace period', 'amber'] : ['Available', 'green'];
       const details = document.createElement('div');
       details.className = 'billing-indicators';
