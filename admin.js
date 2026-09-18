@@ -372,10 +372,7 @@ function renderNfcCards() {
           formatDate(card.created_at)
         );
 
-      const cardUrl =
-        `${https://reviewcard.uk}/?card=${encodeURIComponent(
-          card.card_code
-        )}`;
+      const cardUrl = `https://reviewcard.uk/?card=${encodeURIComponent(card.card_code)}`;
 
       return `
         <div style="
