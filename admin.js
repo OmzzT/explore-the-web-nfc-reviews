@@ -148,6 +148,87 @@ function clearWizard() {
   }
 }
 
+async function previewSubscriptionCheckout(
+  businessId,
+  button
+) {
+  if (!businessId) {
+    alert("Business ID is missing.");
+    return;
+  }
+
+  const originalText = button.textContent;
+
+  button.disabled = true;
+  button.textContent = "Creating preview...";
+
+  const previewTab = window.open(
+    "about:blank",
+    "_blank"
+  );
+
+  try {
+    const { data, error } =
+      await supabaseClient.functions.invoke(
+        "create-subscription-checkout",
+        {
+          body: {
+            business_id: businessId,
+            preview: true
+          }
+        }
+      );
+
+    if (
+      error ||
+      !data?.success ||
+      data.preview !== true ||
+      data.email_sent !== false ||
+      data.livemode !== true ||
+      !data.checkout_url
+    ) {
+      previewTab?.close();
+
+      console.error(
+        "Checkout preview error:",
+        error,
+        data
+      );
+
+      alert(
+        data?.error ||
+          "The live checkout preview could not be created."
+      );
+
+      return;
+    }
+
+    if (previewTab) {
+      previewTab.location.href =
+        data.checkout_url;
+    } else {
+      window.prompt(
+        "Open this live Stripe checkout link:",
+        data.checkout_url
+      );
+    }
+  } catch (error) {
+    previewTab?.close();
+
+    console.error(
+      "Checkout preview error:",
+      error
+    );
+
+    alert(
+      "The checkout preview could not be created."
+    );
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
 /* =========================
    BUSINESSES
 ========================= */
@@ -280,10 +361,60 @@ function renderBusinesses() {
               </a>
             </p>
 
+            ${
+              business.billing_status ===
+              "not_configured"
+                ? `
+                  <button
+                    type="button"
+                    class="preview-checkout-button"
+                    data-business-id="${escapeHtml(
+                      business.id
+                    )}"
+                    style="
+                      margin-top:12px;
+                      border:0;
+                      border-radius:9px;
+                      padding:10px 14px;
+                      background:#111827;
+                      color:white;
+                      font-weight:700;
+                      cursor:pointer;
+                    "
+                  >
+                    Preview checkout
+                  </button>
+                `
+                : `
+                  <p>
+                    <strong>Billing:</strong>
+                    ${escapeHtml(
+                      business.billing_status
+                    )}
+                  </p>
+                `
+            }
+
           </div>
         `;
       })
       .join("");
+
+  businessesContainer
+    .querySelectorAll(
+      ".preview-checkout-button"
+    )
+    .forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          previewSubscriptionCheckout(
+            button.dataset.businessId,
+            button
+          );
+        }
+      );
+    });
 }
 
 async function loadBusinesses() {
@@ -372,7 +503,10 @@ function renderNfcCards() {
           formatDate(card.created_at)
         );
 
-      const cardUrl = `https://reviewcard.uk/?card=${encodeURIComponent(card.card_code)}`;
+      const cardUrl =
+        `https://reviewcard.uk/?card=${encodeURIComponent(
+          card.card_code
+        )}`;
 
       return `
         <div style="
@@ -1071,7 +1205,6 @@ async function loadFeedback() {
 
   renderFeedback();
 }
-
 /* =========================
    ANALYTICS
 ========================= */
@@ -1459,7 +1592,10 @@ async function createCustomer() {
         const cardCode =
           row.card_code;
 
-        const cardUrl = `https://reviewcard.uk/?card=${encodeURIComponent(cardCode)}`;
+        const cardUrl =
+          `https://reviewcard.uk/?card=${encodeURIComponent(
+            cardCode
+          )}`;
 
         return (
           `${cardCode}\n` +
