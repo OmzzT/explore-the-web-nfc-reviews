@@ -2,6 +2,293 @@ const supabaseUrl = window.APP_CONFIG?.SUPABASE_URL;
 const supabaseKey = window.APP_CONFIG?.SUPABASE_PUBLISHABLE_KEY;
 
 /* =========================
+   RESPONSIVE ADMIN LAYOUT
+========================= */
+
+function installResponsiveAdminStyles() {
+  if (document.getElementById("admin-responsive-styles")) {
+    return;
+  }
+
+  const style = document.createElement("style");
+
+  style.id = "admin-responsive-styles";
+  style.textContent = `
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    .app-shell,
+    .main-content,
+    .content-section,
+    .panel,
+    .panel-header,
+    .business-toolbar,
+    #businesses,
+    #nfc-page,
+    #feedback-page,
+    #analytics-page {
+      min-width: 0;
+    }
+
+    .main-content {
+      width: 100%;
+    }
+
+    #businesses p,
+    #businesses a,
+    #feedback-page p,
+    #feedback-page div,
+    #nfc-page p,
+    #nfc-page div {
+      overflow-wrap: anywhere;
+    }
+
+    @media (min-width: 801px) {
+      .business-toolbar {
+        justify-content: flex-end;
+      }
+
+      #business-search {
+        flex: 1 1 280px;
+        max-width: 420px;
+      }
+    }
+
+    @media (max-width: 800px) {
+      .app-shell {
+        display: block !important;
+        width: 100%;
+      }
+
+      .sidebar {
+        position: sticky !important;
+        top: 0;
+        z-index: 100;
+        width: 100%;
+        height: auto !important;
+        padding: 12px 14px !important;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        box-shadow: 0 8px 24px rgba(17, 24, 39, 0.16);
+      }
+
+      .sidebar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .sidebar-brand {
+        flex: 0 0 auto;
+        margin: 0 8px 0 0 !important;
+        padding: 0 8px 0 2px !important;
+        font-size: 15px !important;
+        white-space: nowrap;
+      }
+
+      .sidebar-brand .brand-dot {
+        width: 10px;
+        height: 10px;
+      }
+
+      .nav-label {
+        display: none !important;
+      }
+
+      .nav-button {
+        flex: 0 0 auto;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 10px 12px !important;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+
+      .sidebar-bottom {
+        position: static !important;
+        flex: 0 0 auto;
+        margin: 0 0 0 4px !important;
+      }
+
+      #logout-button {
+        width: auto !important;
+        padding: 9px 12px !important;
+        white-space: nowrap;
+      }
+
+      .main-content {
+        padding: 18px 14px 32px !important;
+        overflow: visible !important;
+      }
+
+      .page-header {
+        gap: 14px !important;
+        margin-bottom: 20px !important;
+      }
+
+      .page-header h1 {
+        font-size: 26px !important;
+      }
+
+      .page-header p {
+        line-height: 1.5;
+      }
+
+      .page-header > button,
+      .page-header .primary-button,
+      .page-header .secondary-button {
+        width: 100%;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px !important;
+      }
+
+      .stat-card {
+        padding: 16px !important;
+      }
+
+      .panel {
+        width: 100%;
+        padding: 16px !important;
+        border-radius: 15px !important;
+        overflow: hidden;
+      }
+
+      .panel-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 14px !important;
+      }
+
+      .panel-header > div {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .business-toolbar {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        width: 100% !important;
+        gap: 9px !important;
+      }
+
+      #business-search,
+      #business-status-filter,
+      #business-sort,
+      #nfc-card-search,
+      #feedback-search,
+      #feedback-rating-filter {
+        display: block;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+      }
+
+      #businesses > div {
+        padding: 16px !important;
+      }
+
+      #businesses button,
+      #businesses .preview-checkout-button {
+        max-width: 100%;
+        white-space: normal;
+      }
+
+      #nfc-page .panel > div:first-child,
+      #feedback-page .panel > div:first-child {
+        align-items: stretch !important;
+        flex-direction: column !important;
+      }
+
+      #feedback-page .panel > div:first-child > div:last-child {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        width: 100%;
+      }
+
+      #nfc-page [style*="grid-template-columns"],
+      #analytics-page [style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+      }
+
+      #nfc-page [style*="justify-content:flex-end"] {
+        justify-content: flex-start !important;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .form-actions {
+        flex-direction: column;
+      }
+
+      .form-actions button {
+        width: 100%;
+      }
+
+      .settings-row {
+        flex-direction: column;
+        align-items: flex-start !important;
+      }
+
+      .empty-state {
+        padding: 38px 18px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #login-section {
+        padding: 14px !important;
+      }
+
+      .login-card {
+        padding: 24px 18px !important;
+        border-radius: 18px !important;
+      }
+
+      .main-content {
+        padding: 16px 10px 28px !important;
+      }
+
+      .page-header h1 {
+        font-size: 24px !important;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .panel {
+        padding: 14px !important;
+      }
+
+      #businesses > div {
+        padding: 14px !important;
+      }
+
+      #businesses button,
+      #businesses a,
+      #nfc-page button,
+      #nfc-page a {
+        font-size: 14px;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+installResponsiveAdminStyles();
+
+/* =========================
    ELEMENTS
 ========================= */
 
@@ -828,7 +1115,6 @@ async function loadNfcCards() {
 
   renderNfcCards();
 }
-
 /* =========================
    FEEDBACK
 ========================= */
@@ -1205,6 +1491,7 @@ async function loadFeedback() {
 
   renderFeedback();
 }
+
 /* =========================
    ANALYTICS
 ========================= */
